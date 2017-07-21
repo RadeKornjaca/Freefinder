@@ -9,18 +9,18 @@ import android.view.View;
  * Created by rade on 8.3.17..
  */
 public class ToolbarBuilder {
-    private Context context;
+    private AppCompatActivity activity;
     private View view;
     private Toolbar toolbar;
 
-    public ToolbarBuilder(Context context, View view) {
-        this.context = context;
+    public ToolbarBuilder(AppCompatActivity activity, View view) {
+        this.activity = activity;
         this.view = view;
     }
 
     public ToolbarBuilder registerToolbar(final int toolbarId) {
         this.toolbar = (Toolbar) view.findViewById(toolbarId);
-        ((AppCompatActivity) context).setSupportActionBar(toolbar);
+        activity.setSupportActionBar(toolbar);
 
         return this;
     }
@@ -31,7 +31,7 @@ public class ToolbarBuilder {
     }
 
     public ToolbarBuilder withUpButton() {
-        ((AppCompatActivity) context).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         return this;
     }
 }

@@ -2,12 +2,14 @@ package org.freefinder.activities;
 
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +21,11 @@ public class MapActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialization
+
+
+        // End of initialization
+        setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
@@ -33,6 +40,9 @@ public class MapActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        Intent mainActivityIntent = new Intent(this, MainActivity.class);
+        startActivity(mainActivityIntent);
     }
 
     @Override
@@ -51,6 +61,21 @@ public class MapActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String accessToken = sharedPreferences.getString(getString(R.string.settings_access_token), null);
+
+        // When in onResume method, app will insist that user logs in whatever he tries to do
+        // For example: tries to press back button while on login form activity
+        if(accessToken == null) {
+            Intent authenticationIntent = new Intent(getApplicationContext(), LoginActivity.class);
+            startActivity(authenticationIntent);
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -60,6 +85,9 @@ public class MapActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.action_categories) {
+            Intent categoryIntent = new Intent(getApplicationContext(), CategoriesActivity.class);
+            startActivity(categoryIntent);
         }
 
         return super.onOptionsItemSelected(item);
