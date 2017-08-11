@@ -8,6 +8,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -17,20 +18,24 @@ import java.util.Map;
 public class JsonObjectRequestWithToken extends JsonObjectRequest {
     private String authorizationToken;
 
-    public JsonObjectRequestWithToken(String url,
-                                      JSONObject jsonRequest,
+    public JsonObjectRequestWithToken(int method,
+                                      String url,
                                       String authorizationToken,
+                                      JSONObject jsonRequest,
                                       Response.Listener<JSONObject> listener,
                                       Response.ErrorListener errorListener) {
-        super(url, jsonRequest, listener, errorListener);
+        super(method, url, jsonRequest, listener, errorListener);
         this.authorizationToken = authorizationToken;
     }
 
+
     @Override
     public Map<String, String> getHeaders() throws AuthFailureError {
-        Map<String, String> headers = super.getHeaders();
-        headers.put("Authorization", TextUtils.join(" ", new String[] { "Token",
-                                                                        authorizationToken })
+        Map<String, String> headers = new HashMap<>();
+
+        headers.put("Content-Type", "application/json");
+        headers.put("Authorization", TextUtils.join(" ", new String [] { "Token",
+                                                                         authorizationToken})
         );
 
         return headers;

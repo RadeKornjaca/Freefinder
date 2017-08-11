@@ -1,5 +1,6 @@
 package org.freefinder.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -17,13 +18,12 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
 import org.freefinder.adapters.CategoryAdapter;
 import org.freefinder.http.JsonArrayRequestWithToken;
+import org.freefinder.http.JsonObjectRequestWithToken;
 import org.freefinder.http.RequestQueueSingleton;
 import org.freefinder.model.Category;
 import org.freefinder.shared.SharedPreferencesHelper;
@@ -31,9 +31,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -41,15 +40,16 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private static final String TAG = CategoriesActivity.class.getSimpleName();
 
+    @BindView(R.id.swipe_refresh) SwipeRefreshLayout mSwipeRefreshLayout;
+
     private Realm realm;
     private CategoryAdapter categoryAdapter;
-    private SwipeRefreshLayout mSwipeRefreshLayout;
-    private ArrayAdapter<Category> mCategoryArrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_categories);
+        ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -57,8 +57,8 @@ public class CategoriesActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent addCategoryIntent = new Intent(CategoriesActivity.this, AddCategoryActivity.class);
+                startActivity(addCategoryIntent);
             }
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -69,49 +69,15 @@ public class CategoriesActivity extends AppCompatActivity {
          * Sets up a SwipeRefreshLayout.OnRefreshListener that is invoked when the user
          * performs a swipe-to-refresh gesture.
          */
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh);
         mSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-
-                        // This method performs the actual data-refresh operation.
-                        // The method calls setRefreshing(false) when it's finished.
-                        // myUpdateOperation();
-
-                        JsonArrayRequestWithToken categoriesRequest = new JsonArrayRequestWithToken(
-                                Request.Method.GET,
-                                TextUtils.join("/", new String[] { BuildConfig.API_URL,
-                                                                   BuildConfig.CATEGORIES }),
-                                SharedPreferencesHelper.getAuthorizationToken(CategoriesActivity.this),
-                                null,
-                                new Response.Listener<JSONArray>() {
-                                    @Override
-                                    public void onResponse(JSONArray response) {
-                                        final JSONArray categoriesJson = response;
-                                        realm.executeTransaction(new Realm.Transaction() {
-                                            @Override
-                                            public void execute(Realm realm) {
-                                                realm.createOrUpdateAllFromJson(Category.class, categoriesJson);
-                                            }
-                                        });
-                                    }
-                                }, new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-                                Toast.makeText(CategoriesActivity.this,
-                                               "Could not fetch categories",
-                                               Toast.LENGTH_LONG);
-                            }
-                        });
-
-                        RequestQueueSingleton.getInstance(CategoriesActivity.this).enqueueRequest(categoriesRequest);
-
+                        updateCategories();
                         mSwipeRefreshLayout.setRefreshing(false);
                     }
                 }
         );
-
 
         // RealmResults are "live" views, that are automatically kept up to date, even when changes happen
         // on a background thread. The RealmBaseAdapter will automatically keep track of changes and will
@@ -121,48 +87,24 @@ public class CategoriesActivity extends AppCompatActivity {
 
         ListView listView = (ListView) findViewById(R.id.category_list);
         listView.setAdapter(categoryAdapter);
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Category category = categoryAdapter.getItem(i);
-                if (category == null) {
-                    return true;
-                }
 
-                final String id = category.getName();
-                realm.executeTransactionAsync(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        // realm.where(Category.class).equalTo(Counter.FIELD_COUNT, id).findAll().deleteAllFromRealm();
-                    }
-                });
-                return true;
+                Intent categoryDetailIntent = new Intent(CategoriesActivity.this, CategoryDetailActivity.class);
+                categoryDetailIntent.putExtra("categoryName", category.getName());
+                startActivity(categoryDetailIntent);
             }
         });
     }
+
 
     @Override
     protected void onResume() {
         super.onResume();
 
-//        List<Category> categories = new ArrayList<>();
-//        Category category1 = new Category();
-//        category1.setName("test1");
-//        Category category2 = new Category();
-//        category2.setName("test2");
-//        category2.setCategory(category1);
-//
-//        categories.add(category1);
-//        categories.add(category2);
-//
-//        mCategoryArrayAdapter = new ArrayAdapter<Category>(this,
-//                R.layout.list_row,
-//                R.id.one_element_row,
-//                categories);
-//
-//        ListView listView = (ListView) findViewById(R.id.category_list);
-//
-//        listView.setAdapter(mCategoryArrayAdapter);
+        updateCategories();
     }
 
     @Override
@@ -171,4 +113,61 @@ public class CategoriesActivity extends AppCompatActivity {
         realm.close();
     }
 
+    private void updateCategories() {
+        // This method performs the actual data-refresh operation.
+        // The method calls setRefreshing(false) when it's finished.
+
+        JsonObjectRequestWithToken categoriesRequest = new JsonObjectRequestWithToken(
+                Request.Method.GET,
+                getUpdateUrl(),
+                SharedPreferencesHelper.getAuthorizationToken(CategoriesActivity.this),
+                null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+
+                        try {
+                            final JSONArray categoriesJson = response.getJSONArray("categories");
+                            final String updateTimestamp = response.getString("updateTimestamp");
+
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    realm.createOrUpdateAllFromJson(Category.class, categoriesJson);
+                                }
+                            });
+
+                            SharedPreferencesHelper.setCategoryUpdateTimestamp(CategoriesActivity.this, updateTimestamp);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(CategoriesActivity.this,
+                        "Could not fetch categories",
+                        Toast.LENGTH_LONG);
+            }
+        });
+
+        RequestQueueSingleton.getInstance(CategoriesActivity.this).enqueueRequest(categoriesRequest);
+    }
+
+    private String getUpdateUrl() {
+        final String url = TextUtils.join("/", new String[] { BuildConfig.API_URL,
+                                                              BuildConfig.CATEGORIES });
+
+        final String updateTimestamp = SharedPreferencesHelper.getCategoryUpdateTimestamp(this);
+
+        if(updateTimestamp != null) {
+            final String timestampParameter = TextUtils.join("=", new String[]{"update_timestamp",
+                    SharedPreferencesHelper.getCategoryUpdateTimestamp(this)});
+
+            return TextUtils.join("?", new String[] {url, timestampParameter});
+        }
+
+        return url;
+    }
 }

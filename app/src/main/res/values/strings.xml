@@ -39,4 +39,10 @@
     <string name="menu_refresh">Refresh</string>
     <string name="title_category_list">Categories</string>
     <string name="title_category_detail">Category Detail</string>
+    <string name="title_activity_category_detail">CategoryDetailActivity</string>
+
+    <string name="category_update_timestamp">categoryUpdateTimestamp</string>
+    <string name="title_activity_add_category">AddCategoryActivity</string>
+    <string name="category_name_hint">Name</string>
+    <string name="add_category_button_text">Add Category</string>
 </resources>

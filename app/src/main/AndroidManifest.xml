@@ -7,6 +7,17 @@
     <uses-permission android:name="android.permission.READ_PROFILE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- To determine user's location and meet up with osmdroid -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <uses-feature android:name="android.hardware.location" android:required="true" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -14,6 +25,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
         <activity
             android:name=".activities.MainActivity"
             android:label="@string/app_name"
@@ -54,22 +69,22 @@
                 android:value="org.freefinder.activities.LoginActivity" />
         </activity>
         <activity
-            android:name=".activities.CategoryListActivity"
-            android:label="@string/title_category_list"
-            android:parentActivityName=".activities.MainActivity"
+            android:name=".activities.CategoryDetailActivity"
+            android:label="@string/title_activity_category_detail"
+            android:parentActivityName=".activities.CategoriesActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.freefinder.activities.MainActivity" />
+                android:value="org.freefinder.activities.CategoriesActivity" />
         </activity>
         <activity
-            android:name=".activities.CategoryDetailActivity"
-            android:label="@string/title_category_detail"
-            android:parentActivityName=".activities.CategoryListActivity"
+            android:name=".activities.AddCategoryActivity"
+            android:label="@string/title_activity_add_category"
+            android:parentActivityName=".activities.CategoriesActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.freefinder.activities.CategoryListActivity" />
+                android:value="org.freefinder.activities.CategoriesActivity" />
         </activity>
     </application>
 

@@ -2,7 +2,7 @@ package org.freefinder.model;
 
 
 import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
+import io.realm.annotations.*;
 
 /**
  * Created by rade on 22.6.17..
@@ -10,17 +10,29 @@ import io.realm.annotations.PrimaryKey;
 public class Category extends RealmObject {
 
     @PrimaryKey
+    private int id;
+
+    @Index
     private String name;
 
-    private Category category;
+    private Category parentCategory;
 
     public Category() {
 
     }
 
-    public Category(String name, Category category) {
+    public Category(int id, String name, Category parentCategory) {
+        this.id = id;
         this.name = name;
-        this.category = category;
+        this.parentCategory = parentCategory;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -31,12 +43,12 @@ public class Category extends RealmObject {
         this.name = name;
     }
 
-    public Category getCategory() {
-        return category;
+    public Category getParentCategory() {
+        return parentCategory;
     }
 
-    public void setCategory(Category category) {
-        this.category = category;
+    public void setParentCategory(Category parentCategory) {
+        this.parentCategory = parentCategory;
     }
 
     @Override

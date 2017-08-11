@@ -28,4 +28,20 @@ public class SharedPreferencesHelper {
         editor.putString(context.getString(R.string.settings_access_token), token);
         editor.commit();
     }
+
+    public static String getCategoryUpdateTimestamp(Context context) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        String categoryUpdateTimestamp = sharedPreferences.getString(context.getString(R.string.category_update_timestamp), null);
+
+        return categoryUpdateTimestamp;
+    }
+
+    public static void setCategoryUpdateTimestamp(Context context, String categoryUpdateTimestamp) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        
+        editor.putString(context.getString(R.string.category_update_timestamp), categoryUpdateTimestamp);
+        editor.commit();
+    }
 }
