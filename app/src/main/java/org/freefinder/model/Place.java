@@ -13,6 +13,10 @@ public class Place extends RealmObject {
 
     private String name;
 
+    private Category category;
+
+    private String encodedImage;
+
     private double lat;
 
     private double lng;
@@ -23,15 +27,6 @@ public class Place extends RealmObject {
 
     public Place() {
 
-    }
-
-    public Place(int id, String name, double lat, double lng, int likes, int dislikes) {
-        this.id = id;
-        this.name = name;
-        this.lat = lat;
-        this.lng = lng;
-        this.likes = likes;
-        this.dislikes = dislikes;
     }
 
     public int getId() {
@@ -48,6 +43,22 @@ public class Place extends RealmObject {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
+    public String getEncodedImage() {
+        return encodedImage;
+    }
+
+    public void setEncodedImage(String encodedImage) {
+        this.encodedImage = encodedImage;
     }
 
     public double getLat() {

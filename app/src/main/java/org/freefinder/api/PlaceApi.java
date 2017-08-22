@@ -1,24 +1,46 @@
 package org.freefinder.api;
 
+import android.app.IntentService;
 import android.content.Context;
+import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
+import com.android.volley.toolbox.RequestFuture;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.vision.barcode.Barcode;
 
 import org.freefinder.BuildConfig;
+import org.freefinder.activities.AddPlaceActivity;
+import org.freefinder.activities.MainActivity;
 import org.freefinder.http.JsonArrayRequestWithToken;
+import org.freefinder.http.JsonObjectRequestWithToken;
 import org.freefinder.http.RequestQueueSingleton;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
 import org.freefinder.shared.SharedPreferencesHelper;
+import org.freefinder.shared.UrlBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import io.realm.Realm;
 import io.realm.RealmList;
+import io.realm.RealmResults;
+
+import static org.freefinder.activities.MainActivity.DOWN_RIGHT_COORDINATES;
+import static org.freefinder.activities.MainActivity.UPPER_LEFT_COORDINATES;
 
 /**
  * Created by rade on 9.8.17..
@@ -27,36 +49,157 @@ import io.realm.RealmList;
 public class PlaceApi {
     private static final String TAG = PlaceApi.class.getSimpleName();
 
-    public static RealmList<Place> searchByCategory(Context context, Category category) {
-        Realm realm = Realm.getDefaultInstance();
+    public static class AddNewPlaceTask extends AsyncTask<JSONObject, Void, Boolean> {
+        private Context context;
 
-        JsonArrayRequestWithToken placesRequest = new JsonArrayRequestWithToken(
-                Request.Method.GET,
-                TextUtils.join("/", new String[]{BuildConfig.API_URL,
-                                                 BuildConfig.PLACES }),
-                SharedPreferencesHelper.getAuthorizationToken(context),
-                null,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        try {
-                            Log.d(TAG, response.toString(4));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
+        public AddNewPlaceTask(Context context) {
+            this.context = context;
+        }
 
-                    }
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            ((AddPlaceActivity) context).showProgress(true);
+        }
+
+        @Override
+        protected Boolean doInBackground(JSONObject... params) {
+            boolean isSuccessful = false;
+
+            final JSONObject newPlaceJson = params[0];
+
+            RequestFuture<JSONObject> addPlaceRequestFuture = RequestFuture.newFuture();
+
+            final JsonObjectRequestWithToken addPlaceRequest = new JsonObjectRequestWithToken(
+                    Request.Method.POST,
+                    new UrlBuilder().hostname(BuildConfig.API_URL).resource(BuildConfig.PLACES).getUrl(),
+                    SharedPreferencesHelper.getAuthorizationToken(context),
+                    newPlaceJson,
+                    addPlaceRequestFuture,
+                    addPlaceRequestFuture
+            );
+
+            RequestQueueSingleton.getInstance(context).enqueueRequest(addPlaceRequest);
+
+            try {
+                JSONObject response = addPlaceRequestFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
+                                                                Constants.TIME_UNIT);
+                if(response.get("id") != null) {
+                    isSuccessful = true;
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
 
-        );
+            return isSuccessful;
+        }
 
-        RequestQueueSingleton.getInstance(context).enqueueRequest(placesRequest);
+        @Override
+        protected void onPostExecute(Boolean isSuccessful) {
+            super.onPostExecute(isSuccessful);
 
-        return null;
+            if(isSuccessful) {
+                Intent intent = new Intent(context, MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                context.startActivity(intent);
+            } else {
+                Snackbar.make( ((AddPlaceActivity) context).findViewById(android.R.id.content),
+                        "Couldn't add new place.",
+                        Snackbar.LENGTH_LONG)
+                        .show();
+            }
+
+            ((AddPlaceActivity) context).showProgress(false);
+        }
+    }
+
+    public static class SearchAreaByCategoryService extends IntentService {
+
+        public static final String CATEGORY_ID = "org.freefinder.services.extra.CATEGORY_ID";
+        public static final String UPPER_LEFT_COORDINATE = "org.freefinder.services.extra.UPPER_LEFT_COORDINATE";
+        public static final String DOWN_RIGHT_COORDINATE = "org.freefinder.services.extra.DOWN_RIGHT_COORDINATE";
+
+        public SearchAreaByCategoryService() {
+            super("SearchAreaByCategoryService");
+        }
+
+        public static void startService(Context context,
+                                        Category category,
+                                        LatLng upperLeft,
+                                        LatLng downRight) {
+
+            Intent searchIntent = new Intent(context, SearchAreaByCategoryService.class);
+            searchIntent.putExtra(CATEGORY_ID, category.getId());
+            searchIntent.putExtra(UPPER_LEFT_COORDINATE, upperLeft);
+            searchIntent.putExtra(DOWN_RIGHT_COORDINATE, downRight);
+
+            context.startService(searchIntent);
+        }
+
+        @Override
+        protected void onHandleIntent(@Nullable Intent intent) {
+            if(intent != null) {
+                final int categoryId = intent.getIntExtra(CATEGORY_ID, 0);
+                final LatLng upperLeftCoordinates = intent.getParcelableExtra(UPPER_LEFT_COORDINATE);
+                final LatLng downRightCoordinates = intent.getParcelableExtra(DOWN_RIGHT_COORDINATE);
+                fetchPlaces(categoryId, upperLeftCoordinates, downRightCoordinates);
+            }
+        }
+
+        private void fetchPlaces(int categoryId, LatLng upperLeftCoordinates, LatLng downRightCoordinates) {
+            final Realm realm = Realm.getDefaultInstance();
+            final Context context = getApplicationContext();
+
+            String minLatString = String.valueOf(downRightCoordinates.latitude);
+            String maxLatString = String.valueOf(upperLeftCoordinates.latitude);
+            String minLngString = String.valueOf(upperLeftCoordinates.longitude);
+            String maxLngString = String.valueOf(downRightCoordinates.longitude);
+            String categoryIdString = String.valueOf(categoryId);
+
+            RequestFuture<JSONArray> placesRequestFuture = RequestFuture.newFuture();
+
+            JsonArrayRequestWithToken placesRequest = new JsonArrayRequestWithToken(
+                    Request.Method.GET,
+                    new UrlBuilder().hostname(BuildConfig.API_URL)
+                                    .resource(BuildConfig.PLACES)
+                                    .parameter("min_lat", minLatString)
+                                    .parameter("max_lat", maxLatString)
+                                    .parameter("min_lng", minLngString)
+                                    .parameter("max_lng", maxLngString)
+                                    .parameter("category_id", categoryIdString)
+                                    .getUrl(),
+                    SharedPreferencesHelper.getAuthorizationToken(context),
+                    null,
+                    placesRequestFuture,
+                    placesRequestFuture
+            );
+
+            RequestQueueSingleton.getInstance(context).enqueueRequest(placesRequest);
+
+            try {
+                JSONArray response = placesRequestFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
+                                                             Constants.TIME_UNIT);
+                try {
+                    realm.beginTransaction();
+                    realm.createOrUpdateAllFromJson(Place.class, response);
+                    realm.commitTransaction();
+                } finally {
+                    realm.close();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

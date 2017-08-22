@@ -39,10 +39,16 @@
     <string name="menu_refresh">Refresh</string>
     <string name="title_category_list">Categories</string>
     <string name="title_category_detail">Category Detail</string>
-    <string name="title_activity_category_detail">CategoryDetailActivity</string>
+    <string name="title_activity_category_detail">Category Details</string>
 
+    <!-- Add new category -->
     <string name="category_update_timestamp">categoryUpdateTimestamp</string>
-    <string name="title_activity_add_category">AddCategoryActivity</string>
+    <string name="title_activity_add_category">Add New Category</string>
     <string name="category_name_hint">Name</string>
     <string name="add_category_button_text">Add Category</string>
+
+    <!-- Add new place -->
+    <string name="title_activity_add_place">Add New Place</string>
+    <string name="place_name_hint">Name</string>
+    <string name="place_category_hint">Category</string>
 </resources>

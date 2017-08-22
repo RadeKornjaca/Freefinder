@@ -47,6 +47,7 @@ import java.util.List;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
+import org.freefinder.api.LoginApi;
 import org.freefinder.http.IResponse;
 import org.freefinder.http.RequestQueueSingleton;
 import org.json.JSONException;
@@ -196,57 +197,22 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // form field with an error.
             focusView.requestFocus();
         } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
-            showProgress(true);
-//            mAuthTask = new UserLoginTask(email, password);
-//            mAuthTask.execute((Void) null);
-
-            // JSONObject user = new JSONObject();
-            JSONObject parameters = new JSONObject();
+            JSONObject loginCredentialsJson = new JSONObject();
             try {
-                parameters.put("email", email);
-                parameters.put("password", password);
-                // user.put("user", parameters);
+                loginCredentialsJson.put("email", email);
+                loginCredentialsJson.put("password", password);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
-            JsonObjectRequest authRequest = new JsonObjectRequest(Request.Method.POST,
-                    TextUtils.join("/", new String[]{BuildConfig.API_URL,
-                            BuildConfig.DEVICE_SIGN_IN}),
-                    parameters,
-                    new Response.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            Context context = getApplicationContext();
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-
-                            try {
-                                editor.putString(context.getString(R.string.settings_access_token),
-                                        response.getString("access_token"));
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-
-                            editor.commit();
-
-                            showProgress(false);
-                            finish();
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    showProgress(false);
-
-                    mPasswordView.setError(getString(R.string.error_incorrect_password));
-                    mPasswordView.requestFocus();
-                }
-            });
-
-            RequestQueueSingleton.getInstance(LoginActivity.this).enqueueRequest(authRequest);
+            LoginApi.UserLoginTask userLoginTask = new LoginApi.UserLoginTask(this);
+            userLoginTask.execute(loginCredentialsJson);
         }
+    }
+
+    public void formError() {
+        mPasswordView.setError(getString(R.string.error_incorrect_password));
+        mPasswordView.requestFocus();
     }
 
     private boolean isEmailValid(String email) {
@@ -263,7 +229,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * Shows the progress UI and hides the login form.
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-    private void showProgress(final boolean show) {
+    public void showProgress(final boolean show) {
         // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
         // for very easy animations. If available, use these APIs to fade-in
         // the progress spinner.

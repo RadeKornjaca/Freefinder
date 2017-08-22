@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,23 +28,31 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import org.freefinder.R;
 import org.freefinder.api.PlaceApi;
 import org.freefinder.model.Category;
+import org.freefinder.model.Place;
+import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
+import org.osmdroid.events.DelayedMapListener;
+import org.osmdroid.events.MapListener;
+import org.osmdroid.events.ScrollEvent;
+import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
+import io.realm.RealmResults;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -51,6 +60,12 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int APP_LOCATION_PERMISSION = 1;
+    private static final int DEFAULT_INACTIVITY_DELAY_IN_MILLISECONDS = 200;
+
+    public static final String UPPER_LEFT_COORDINATES = "upperLeftCoordinates";
+    public static final String DOWN_RIGHT_COORDINATES = "downRightCoordinates";
+    public static final String CATEGORY_ID = "categoryId";
+    public static final String USER_LOCATION = "userLocation";
 
     private final String[] permissions = {
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -64,10 +79,12 @@ public class MainActivity extends AppCompatActivity
     private MyLocationNewOverlay myLocationNewOverlay;
 
     private boolean mLocationRequest = false;
+    private LocationManager mLocationManager;
+    private Location mLocation;
     private final LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-
+            mLocation = location;
         }
 
         @Override
@@ -87,6 +104,8 @@ public class MainActivity extends AppCompatActivity
     };
 
     private Realm realm;
+    private Category category;
+    private RealmResults<Place> places;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,6 +137,19 @@ public class MainActivity extends AppCompatActivity
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setBuiltInZoomControls(true);
         mapView.setMultiTouchControls(true);
+        mapView.setMapListener(new DelayedMapListener(new MapListener() {
+            @Override
+            public boolean onScroll(ScrollEvent event) {
+                fetchPlacesFromBoundary();
+                return false;
+            }
+
+            @Override
+            public boolean onZoom(ZoomEvent event) {
+                fetchPlacesFromBoundary();
+                return false;
+            }
+        }, DEFAULT_INACTIVITY_DELAY_IN_MILLISECONDS));
 
         myLocationNewOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(ctx), mapView);
         myLocationNewOverlay.enableMyLocation();
@@ -127,15 +159,25 @@ public class MainActivity extends AppCompatActivity
         mapController.setZoom(ZOOM_LEVEL);
 
         if(mLocationRequest == true) {
-            updateLocationUI(getMyLocation());
+            mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            Criteria criteria = new Criteria();
+
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+
+            String locationProvider = mLocationManager.getBestProvider(criteria, true);
+            mLocation = mLocationManager.getLastKnownLocation(locationProvider);
+            updateLocationUI(mLocation);
+            // updateLocationUI(LocationProvider.getMyLocation(this));
         }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent addPlaceIntent = new Intent(MainActivity.this, AddPlaceActivity.class);
+                addPlaceIntent.putExtra(USER_LOCATION, mLocation);
+                startActivity(addPlaceIntent);
             }
         });
 
@@ -151,12 +193,12 @@ public class MainActivity extends AppCompatActivity
         // Search querying
         realm = Realm.getDefaultInstance();
 
-        Intent intent = getIntent();
-        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
-            String query = intent.getStringExtra(SearchManager.QUERY);
+        Intent currentIntent = getIntent();
+        if (Intent.ACTION_SEARCH.equals(currentIntent.getAction())) {
+            String query = currentIntent.getStringExtra(SearchManager.QUERY);
 
-            Category category = realm.where(Category.class).equalTo("name", query).findFirst();
-            PlaceApi.searchByCategory(this, category);
+            category = realm.where(Category.class).equalTo("name", query).findFirst();
+            // PlaceApi.searchByCategory(this, category);
         }
     }
 
@@ -180,6 +222,61 @@ public class MainActivity extends AppCompatActivity
         //Configuration.getInstance().save(this, prefs);
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
 
+
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        realm.close();
+    }
+
+    private void fetchPlacesFromBoundary() {
+        if(mLocation != null && category != null) {
+//            BoundingBox boundingBox = mapView.getProjection().getBoundingBox();
+//            LatLng upperLeftCoordinates = new LatLng(boundingBox.getLatNorth(),
+//                                          boundingBox.getLonWest());
+//            LatLng downRightCoordinates = new LatLng(boundingBox.getLatSouth(),
+//                                          boundingBox.getLonEast());
+
+
+            IGeoPoint screenTopLeft = mapView.getProjection().fromPixels(0, 0);
+            IGeoPoint screenBottomRight = mapView.getProjection().fromPixels(mapView.getWidth(),
+                                                                             mapView.getHeight());
+
+            LatLng upperLeftCoordinates = new LatLng(screenTopLeft.getLatitude(),
+                                                     screenTopLeft.getLongitude());
+            LatLng downRightCoordinates = new LatLng(screenBottomRight.getLatitude(),
+                                                     screenBottomRight.getLongitude());
+
+            PlaceApi.SearchAreaByCategoryService searchAreaByCategoryService = new PlaceApi.SearchAreaByCategoryService();
+            searchAreaByCategoryService.startService(this, category, upperLeftCoordinates, downRightCoordinates);
+            places = realm.where(Place.class)
+                          .between("lat", downRightCoordinates.latitude,
+                                          upperLeftCoordinates.latitude)
+                          .between("lng", upperLeftCoordinates.longitude,
+                                          downRightCoordinates.longitude)
+                          .equalTo("category.id", category.getId())
+                          .findAllAsync();
+
+            places.addChangeListener(new RealmChangeListener<RealmResults<Place>>() {
+                @Override
+                public void onChange(RealmResults<Place> places) {
+                    for(Place place : places) {
+                        Marker placeMarker = new Marker(mapView);
+                        final GeoPoint placePoint = new GeoPoint(place.getLat(), place.getLng());
+                        placeMarker.setPosition(placePoint);
+                        placeMarker.setTitle(place.getName());
+                        placeMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        mapView.getOverlays().add(placeMarker);
+                    }
+
+                    mapView.invalidate();
+                }
+            });
+        }
     }
 
     @Override
@@ -240,7 +337,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_manage) {
 
         } else if (id == R.id.nav_my_location) {
-            updateLocationUI(getMyLocation());
+            updateLocationUI(mLocation);
         } else if (id == R.id.nav_share) {
 
         } else if (id == R.id.nav_send) {
@@ -272,32 +369,6 @@ public class MainActivity extends AppCompatActivity
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
-
-    private Location getMyLocation() {
-        LocationManager mLocationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
-        List<String> providers = mLocationManager.getProviders(true);
-        Location bestLocation = null;
-        Location l = null;
-
-        for (String provider : providers) {
-            try {
-                l = mLocationManager.getLastKnownLocation(provider);
-            } catch (SecurityException se) {
-                se.printStackTrace();
-            }
-
-            if (l == null) {
-                continue;
-            }
-
-            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
-                bestLocation = l;
-            }
-        }
-
-        return bestLocation;
-    }
-
     private void updateLocationUI(Location location) {
         if(location != null) {
             final double userLatitude = location.getLatitude();
@@ -310,5 +381,9 @@ public class MainActivity extends AppCompatActivity
                            "Can't find user location!",
                            Snackbar.LENGTH_LONG ).show();
         }
+    }
+
+    public MapView getMapView() {
+        return mapView;
     }
 }
