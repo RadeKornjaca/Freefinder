@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
-import android.media.ExifInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -30,6 +29,7 @@ import org.freefinder.R;
 import org.freefinder.api.PlaceApi;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
+import org.freefinder.shared.ImageEncoder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -117,11 +117,7 @@ public class AddPlaceActivity extends AppCompatActivity {
                                                                                          .toString())
                                                    .findFirst();
                     place.setCategory(category);
-
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-                    byte[] byteArray = byteArrayOutputStream .toByteArray();
-                    place.setEncodedImage(Base64.encodeToString(byteArray, Base64.DEFAULT));
+                    place.setEncodedImage(ImageEncoder.encodeImage(imageBitmap));
 
                     final Location location = getIntent().getParcelableExtra(MainActivity.USER_LOCATION);
                     place.setLat(location.getLatitude());

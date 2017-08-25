@@ -14,7 +14,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
@@ -26,7 +25,8 @@
     <uses-feature
         android:name="android.hardware.location.network"
         android:required="true" />
-    <uses-feature android:name="android.hardware.camera"
+    <uses-feature
+        android:name="android.hardware.camera"
         android:required="true" />
 
     <application
@@ -36,9 +36,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
 
         <activity
             android:name=".activities.MainActivity"
@@ -107,8 +104,23 @@
                 android:value="org.freefinder.activities.MainActivity" />
         </activity>
 
+
+        <activity
+            android:name=".activities.PlaceDetailActivity"
+            android:label="@string/title_activity_place_detail"
+            android:parentActivityName=".activities.MainActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:noHistory="true">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.freefinder.activities.MainActivity" />
+        </activity>
+
         <service
             android:name=".api.PlaceApi$SearchAreaByCategoryService"
+            android:exported="false" />
+        <service
+            android:name=".api.RatingApi$RatingService"
             android:exported="false" />
     </application>
 

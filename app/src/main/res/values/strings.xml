@@ -51,4 +51,8 @@
     <string name="title_activity_add_place">Add New Place</string>
     <string name="place_name_hint">Name</string>
     <string name="place_category_hint">Category</string>
+    <string name="title_activity_place_detail">PlaceDetailActivity</string>
+    <string name="like_button">Like</string>
+    <string name="dislike_button">Dislike</string>
+    <string name="report_button">Report</string>
 </resources>

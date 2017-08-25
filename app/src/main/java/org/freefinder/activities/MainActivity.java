@@ -18,6 +18,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -28,25 +29,30 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.google.android.gms.maps.model.LatLng;
-
 import org.freefinder.R;
 import org.freefinder.api.PlaceApi;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
+import org.freefinder.osmdroid.PlaceInfoWindow;
+import org.freefinder.osmdroid.PlaceMarker;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.events.DelayedMapListener;
+import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.events.MapListener;
 import org.osmdroid.events.ScrollEvent;
 import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
+
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -235,41 +241,41 @@ public class MainActivity extends AppCompatActivity
 
     private void fetchPlacesFromBoundary() {
         if(mLocation != null && category != null) {
-//            BoundingBox boundingBox = mapView.getProjection().getBoundingBox();
-//            LatLng upperLeftCoordinates = new LatLng(boundingBox.getLatNorth(),
-//                                          boundingBox.getLonWest());
-//            LatLng downRightCoordinates = new LatLng(boundingBox.getLatSouth(),
-//                                          boundingBox.getLonEast());
+            BoundingBox boundingBox = mapView.getProjection().getBoundingBox();
+            GeoPoint screenTopLeft = new GeoPoint(boundingBox.getLatNorth(),
+                                                  boundingBox.getLonWest());
+            GeoPoint screenBottomRight = new GeoPoint(boundingBox.getLatSouth(),
+                                                      boundingBox.getLonEast());
 
 
-            IGeoPoint screenTopLeft = mapView.getProjection().fromPixels(0, 0);
-            IGeoPoint screenBottomRight = mapView.getProjection().fromPixels(mapView.getWidth(),
-                                                                             mapView.getHeight());
+//            GeoPoint screenTopLeft = mapView.getProjection().fromPixels(0, 0);
+//            GeoPoint screenBottomRight = mapView.getProjection().fromPixels(mapView.getWidth(),
+//                                                                             mapView.getHeight());
 
-            LatLng upperLeftCoordinates = new LatLng(screenTopLeft.getLatitude(),
-                                                     screenTopLeft.getLongitude());
-            LatLng downRightCoordinates = new LatLng(screenBottomRight.getLatitude(),
-                                                     screenBottomRight.getLongitude());
-
-            PlaceApi.SearchAreaByCategoryService searchAreaByCategoryService = new PlaceApi.SearchAreaByCategoryService();
-            searchAreaByCategoryService.startService(this, category, upperLeftCoordinates, downRightCoordinates);
+            PlaceApi.SearchAreaByCategoryService.startService(this, category, screenTopLeft, screenBottomRight);
             places = realm.where(Place.class)
-                          .between("lat", downRightCoordinates.latitude,
-                                          upperLeftCoordinates.latitude)
-                          .between("lng", upperLeftCoordinates.longitude,
-                                          downRightCoordinates.longitude)
+                          .between("lat", screenBottomRight.getLatitude(),
+                                          screenTopLeft.getLatitude())
+                          .between("lng", screenTopLeft.getLongitude(),
+                                          screenBottomRight.getLatitude())
                           .equalTo("category.id", category.getId())
                           .findAllAsync();
 
             places.addChangeListener(new RealmChangeListener<RealmResults<Place>>() {
                 @Override
                 public void onChange(RealmResults<Place> places) {
+                    mapView.getOverlayManager().clear();
+
                     for(Place place : places) {
                         Marker placeMarker = new Marker(mapView);
                         final GeoPoint placePoint = new GeoPoint(place.getLat(), place.getLng());
                         placeMarker.setPosition(placePoint);
                         placeMarker.setTitle(place.getName());
+                        placeMarker.setIcon(getResources().getDrawable(R.drawable.ic_place));
                         placeMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        placeMarker.setInfoWindow(new PlaceInfoWindow(mapView));
+                        placeMarker.setRelatedObject(place);
+
                         mapView.getOverlays().add(placeMarker);
                     }
 
@@ -381,9 +387,5 @@ public class MainActivity extends AppCompatActivity
                            "Can't find user location!",
                            Snackbar.LENGTH_LONG ).show();
         }
-    }
-
-    public MapView getMapView() {
-        return mapView;
     }
 }

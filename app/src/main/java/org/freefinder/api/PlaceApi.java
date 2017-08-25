@@ -4,16 +4,13 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.RequestFuture;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.vision.barcode.Barcode;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.activities.AddPlaceActivity;
@@ -29,18 +26,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import io.realm.Realm;
-import io.realm.RealmList;
-import io.realm.RealmResults;
-
-import static org.freefinder.activities.MainActivity.DOWN_RIGHT_COORDINATES;
-import static org.freefinder.activities.MainActivity.UPPER_LEFT_COORDINATES;
 
 /**
  * Created by rade on 9.8.17..
@@ -132,13 +122,13 @@ public class PlaceApi {
 
         public static void startService(Context context,
                                         Category category,
-                                        LatLng upperLeft,
-                                        LatLng downRight) {
+                                        GeoPoint upperLeft,
+                                        GeoPoint downRight) {
 
             Intent searchIntent = new Intent(context, SearchAreaByCategoryService.class);
             searchIntent.putExtra(CATEGORY_ID, category.getId());
-            searchIntent.putExtra(UPPER_LEFT_COORDINATE, upperLeft);
-            searchIntent.putExtra(DOWN_RIGHT_COORDINATE, downRight);
+            searchIntent.putExtra(UPPER_LEFT_COORDINATE, (Parcelable) upperLeft);
+            searchIntent.putExtra(DOWN_RIGHT_COORDINATE, (Parcelable) downRight);
 
             context.startService(searchIntent);
         }
@@ -147,20 +137,20 @@ public class PlaceApi {
         protected void onHandleIntent(@Nullable Intent intent) {
             if(intent != null) {
                 final int categoryId = intent.getIntExtra(CATEGORY_ID, 0);
-                final LatLng upperLeftCoordinates = intent.getParcelableExtra(UPPER_LEFT_COORDINATE);
-                final LatLng downRightCoordinates = intent.getParcelableExtra(DOWN_RIGHT_COORDINATE);
+                final GeoPoint upperLeftCoordinates = intent.getParcelableExtra(UPPER_LEFT_COORDINATE);
+                final GeoPoint downRightCoordinates = intent.getParcelableExtra(DOWN_RIGHT_COORDINATE);
                 fetchPlaces(categoryId, upperLeftCoordinates, downRightCoordinates);
             }
         }
 
-        private void fetchPlaces(int categoryId, LatLng upperLeftCoordinates, LatLng downRightCoordinates) {
+        private void fetchPlaces(int categoryId, GeoPoint upperLeftCoordinates, GeoPoint downRightCoordinates) {
             final Realm realm = Realm.getDefaultInstance();
             final Context context = getApplicationContext();
 
-            String minLatString = String.valueOf(downRightCoordinates.latitude);
-            String maxLatString = String.valueOf(upperLeftCoordinates.latitude);
-            String minLngString = String.valueOf(upperLeftCoordinates.longitude);
-            String maxLngString = String.valueOf(downRightCoordinates.longitude);
+            String minLatString = String.valueOf(downRightCoordinates.getLatitude());
+            String maxLatString = String.valueOf(upperLeftCoordinates.getLatitude());
+            String minLngString = String.valueOf(upperLeftCoordinates.getLongitude());
+            String maxLngString = String.valueOf(downRightCoordinates.getLongitude());
             String categoryIdString = String.valueOf(categoryId);
 
             RequestFuture<JSONArray> placesRequestFuture = RequestFuture.newFuture();
@@ -186,19 +176,13 @@ public class PlaceApi {
             try {
                 JSONArray response = placesRequestFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
                                                              Constants.TIME_UNIT);
-                try {
-                    realm.beginTransaction();
-                    realm.createOrUpdateAllFromJson(Place.class, response);
-                    realm.commitTransaction();
-                } finally {
-                    realm.close();
-                }
-            } catch (InterruptedException e) {
+                realm.beginTransaction();
+                realm.createOrUpdateAllFromJson(Place.class, response);
+                realm.commitTransaction();
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (TimeoutException e) {
-                e.printStackTrace();
+            } finally {
+                realm.close();
             }
         }
     }
