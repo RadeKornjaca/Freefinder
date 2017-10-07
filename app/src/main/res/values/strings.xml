@@ -55,4 +55,12 @@
     <string name="like_button">Like</string>
     <string name="dislike_button">Dislike</string>
     <string name="report_button">Report</string>
+    <string name="add_place_button_text">Add Place</string>
+    <string name="title_activity_revision">RevisionActivity</string>
+    <string name="place_description_hint">Description</string>
+    <string name="revision">Revision</string>
+    <string name="title_activity_revision_detail">Revision Approval</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

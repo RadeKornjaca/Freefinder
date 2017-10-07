@@ -136,14 +136,14 @@ public class PlaceApi {
         @Override
         protected void onHandleIntent(@Nullable Intent intent) {
             if(intent != null) {
-                final int categoryId = intent.getIntExtra(CATEGORY_ID, 0);
+                final long categoryId = intent.getLongExtra(CATEGORY_ID, 0);
                 final GeoPoint upperLeftCoordinates = intent.getParcelableExtra(UPPER_LEFT_COORDINATE);
                 final GeoPoint downRightCoordinates = intent.getParcelableExtra(DOWN_RIGHT_COORDINATE);
                 fetchPlaces(categoryId, upperLeftCoordinates, downRightCoordinates);
             }
         }
 
-        private void fetchPlaces(int categoryId, GeoPoint upperLeftCoordinates, GeoPoint downRightCoordinates) {
+        private void fetchPlaces(long categoryId, GeoPoint upperLeftCoordinates, GeoPoint downRightCoordinates) {
             final Realm realm = Realm.getDefaultInstance();
             final Context context = getApplicationContext();
 

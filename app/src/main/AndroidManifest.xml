@@ -36,7 +36,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
         <activity
             android:name=".activities.MainActivity"
             android:label="@string/app_name"
@@ -103,17 +102,29 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="org.freefinder.activities.MainActivity" />
         </activity>
-
-
         <activity
             android:name=".activities.PlaceDetailActivity"
             android:label="@string/title_activity_place_detail"
+            android:noHistory="true"
             android:parentActivityName=".activities.MainActivity"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:noHistory="true">
+            android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="org.freefinder.activities.MainActivity" />
+        </activity>
+
+        <activity
+            android:name=".activities.RevisionActivity"
+            android:label="@string/title_activity_revision"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.RevisionDetailActivity"
+            android:label="@string/title_activity_revision_detail"
+            android:parentActivityName=".activities.RevisionActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.freefinder.activities.RevisionActivity" />
         </activity>
 
         <service
@@ -122,6 +133,10 @@
         <service
             android:name=".api.RatingApi$RatingService"
             android:exported="false" />
+        <service
+            android:name=".api.RevisionApi$RevisionApprovalService"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -3,6 +3,7 @@ package org.freefinder.http;
 import android.text.TextUtils;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkResponse;
 import com.android.volley.Response;
 import com.android.volley.toolbox.JsonObjectRequest;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 
 public class JsonObjectRequestWithToken extends JsonObjectRequest {
     private String authorizationToken;
+    private int statusCode;
 
     public JsonObjectRequestWithToken(int method,
                                       String url,
@@ -39,5 +41,16 @@ public class JsonObjectRequestWithToken extends JsonObjectRequest {
         );
 
         return headers;
+    }
+
+    @Override
+    protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+        this.statusCode = response.statusCode;
+
+        return super.parseNetworkResponse(response);
+    }
+
+    public int getStatusCode() {
+        return statusCode;
     }
 }

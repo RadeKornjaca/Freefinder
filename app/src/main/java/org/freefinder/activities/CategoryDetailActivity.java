@@ -1,10 +1,14 @@
 package org.freefinder.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
@@ -15,6 +19,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Optional;
 import io.realm.Realm;
+
+import static org.freefinder.activities.Constants.RESOURCE_ID;
+import static org.freefinder.activities.Constants.REVISION_TYPE;
 
 public class CategoryDetailActivity extends AppCompatActivity {
 
@@ -37,28 +44,46 @@ public class CategoryDetailActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent revisionIntent = new Intent(CategoryDetailActivity.this, RevisionActivity.class);
+                revisionIntent.putExtra(REVISION_TYPE, "category");
+                revisionIntent.putExtra(RESOURCE_ID, category.getId());
+                startActivity(revisionIntent);
             }
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        final String categoryName = getIntent().getStringExtra("categoryName");
+        final long categoryId = getIntent().getLongExtra("id", 0);
         realm = Realm.getDefaultInstance();
-
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                category = realm.where(Category.class).equalTo("name", categoryName).findFirst();
-            }
-        });
+        category = realm.where(Category.class).equalTo("id", categoryId).findFirst();
 
         categoryNameTextView.setText(category.getName());
         if(category.getParentCategory() != null) {
             parentCategoryTextView.setText(category.getParentCategory().getName());
         }
-
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.revision:
+                Intent revisionDetailIntent = new Intent(this, RevisionDetailActivity.class);
+                revisionDetailIntent.putExtra(RESOURCE_ID, getIntent().getLongExtra(RESOURCE_ID, 0));
+                revisionDetailIntent.putExtra(REVISION_TYPE, "category");
+                startActivity(revisionDetailIntent);
+
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.revision_menu, menu);
+        return true;
+    }
+
 
     @Override
     protected void onDestroy() {

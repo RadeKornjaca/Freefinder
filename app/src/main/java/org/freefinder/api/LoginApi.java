@@ -3,20 +3,30 @@ package org.freefinder.api;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.text.TextUtils;
+import android.util.Log;
 
+import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.RequestFuture;
+import com.google.gson.JsonObject;
 
 import org.freefinder.BuildConfig;
+import org.freefinder.R;
 import org.freefinder.activities.LoginActivity;
 import org.freefinder.activities.MainActivity;
+import org.freefinder.activities.RegistrationActivity;
 import org.freefinder.http.RequestQueueSingleton;
 import org.freefinder.shared.SharedPreferencesHelper;
 import org.freefinder.shared.UrlBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -92,6 +102,74 @@ public class LoginApi {
             }
 
             ((LoginActivity) context).showProgress(false);
+        }
+    }
+
+    public static class UserRegistrationTask extends AsyncTask<JSONObject, Integer, Boolean> {
+
+
+        private final Context context;
+
+        public UserRegistrationTask(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            ((RegistrationActivity) context).showProgress(true);
+        }
+
+        @Override
+        protected Boolean doInBackground(JSONObject... params) {
+            boolean isSuccessful = false;
+            final JSONObject userJson = params[0];
+
+            RequestFuture<JSONObject> registrationRequestFuture = RequestFuture.newFuture();
+
+            JsonObjectRequest registerRequest = new JsonObjectRequest(Request.Method.POST,
+                    new UrlBuilder().hostname(BuildConfig.API_URL)
+                                    .resource(BuildConfig.USERS)
+                                    .getUrl(),
+                    userJson,
+                    registrationRequestFuture,
+                    registrationRequestFuture
+            );
+
+            RequestQueueSingleton.getInstance(context).enqueueRequest(registerRequest);
+
+            try {
+                JSONObject responseJson = registrationRequestFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
+                                                                        Constants.TIME_UNIT);
+                responseJson.get("id");
+                isSuccessful = true;
+            } catch (InterruptedException
+                    | TimeoutException
+                    | ExecutionException
+                    | JSONException e) {
+                e.printStackTrace();
+            }
+
+
+            return isSuccessful;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean isSuccessful) {
+            super.onPostExecute(isSuccessful);
+
+            if(isSuccessful) {
+                Intent intent = new Intent(context, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                context.startActivity(intent);
+            } else {
+                ((RegistrationActivity) context).getPasswordView()
+                                                .setError(context.getString(R.string.error_incorrect_password));
+                ((RegistrationActivity) context).getPasswordView().requestFocus();
+            }
+
+            ((RegistrationActivity) context).showProgress(false);
         }
     }
 }

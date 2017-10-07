@@ -43,6 +43,7 @@ import java.util.List;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
+import org.freefinder.api.LoginApi;
 import org.freefinder.http.IResponse;
 import org.freefinder.http.RequestQueueSingleton;
 import org.json.JSONException;
@@ -218,7 +219,7 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
         } else {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
-            showProgress(true);
+//            showProgress(true);
 //            mAuthTask = new UserRegistrationTask(email, password, confirmPassword);
 //            mAuthTask.execute((Void) null);
 
@@ -233,42 +234,45 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
                 e.printStackTrace();
             }
 
-            JsonObjectRequest registerRequest = new JsonObjectRequest(Request.Method.POST,
-                    TextUtils.join("/", new String[] { BuildConfig.API_URL,
-                                                       BuildConfig.USERS }),
-                    user,
-                    new Response.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            showProgress(false);
-                            finish();
-                        }
-                    }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            showProgress(false);
-                            Log.d(TAG, error.toString());
-                            mPasswordView.setError(getString(R.string.error_incorrect_password));
-                            mPasswordView.requestFocus();
-                        }
-            }) {
-                @Override
-                protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
-                    // Hack that ensures triggering Response.Listener when given response
-                    // with empty body, yet with successful HTTP header code
-                    try {
-                        if(response.statusCode == HttpURLConnection.HTTP_CREATED) {
-                            byte[] responseData = "{}".getBytes("UTF8");
-                            response = new NetworkResponse(response.statusCode, responseData, response.headers, response.notModified);
-                        }
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                    return super.parseNetworkResponse(response);
-                }
-            };
-
-            RequestQueueSingleton.getInstance(RegistrationActivity.this).enqueueRequest(registerRequest);
+            LoginApi.UserRegistrationTask userRegistrationTask = new LoginApi.UserRegistrationTask(this);
+            userRegistrationTask.execute(user);
+//
+//            JsonObjectRequest registerRequest = new JsonObjectRequest(Request.Method.POST,
+//                    TextUtils.join("/", new String[] { BuildConfig.API_URL,
+//                                                       BuildConfig.USERS }),
+//                    user,
+//                    new Response.Listener<JSONObject>() {
+//                        @Override
+//                        public void onResponse(JSONObject response) {
+//                            showProgress(false);
+//                            finish();
+//                        }
+//                    }, new Response.ErrorListener() {
+//                        @Override
+//                        public void onErrorResponse(VolleyError error) {
+//                            showProgress(false);
+//                            Log.d(TAG, error.toString());
+//                            mPasswordView.setError(getString(R.string.error_incorrect_password));
+//                            mPasswordView.requestFocus();
+//                        }
+//            }) {
+//                @Override
+//                protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+//                    // Hack that ensures triggering Response.Listener when given response
+//                    // with empty body, yet with successful HTTP header code
+//                    try {
+//                        if(response.statusCode == HttpURLConnection.HTTP_CREATED) {
+//                            byte[] responseData = "{}".getBytes("UTF8");
+//                            response = new NetworkResponse(response.statusCode, responseData, response.headers, response.notModified);
+//                        }
+//                    } catch (UnsupportedEncodingException e) {
+//                        e.printStackTrace();
+//                    }
+//                    return super.parseNetworkResponse(response);
+//                }
+//            };
+//
+//            RequestQueueSingleton.getInstance(RegistrationActivity.this).enqueueRequest(registerRequest);
         }
     }
 
@@ -286,7 +290,7 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
      * Shows the progress UI and hides the login form.
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-    private void showProgress(final boolean show) {
+    public void showProgress(final boolean show) {
         // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
         // for very easy animations. If available, use these APIs to fade-in
         // the progress spinner.
@@ -370,6 +374,10 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
 
         int ADDRESS = 0;
         int IS_PRIMARY = 1;
+    }
+
+    public EditText getPasswordView() {
+        return mPasswordView;
     }
 
 }

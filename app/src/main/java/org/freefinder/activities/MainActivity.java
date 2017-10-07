@@ -34,7 +34,7 @@ import org.freefinder.api.PlaceApi;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
 import org.freefinder.osmdroid.PlaceInfoWindow;
-import org.freefinder.osmdroid.PlaceMarker;
+import org.freefinder.shared.SharedPreferencesHelper;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
@@ -174,7 +174,6 @@ public class MainActivity extends AppCompatActivity
             String locationProvider = mLocationManager.getBestProvider(criteria, true);
             mLocation = mLocationManager.getLastKnownLocation(locationProvider);
             updateLocationUI(mLocation);
-            // updateLocationUI(LocationProvider.getMyLocation(this));
         }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -204,7 +203,6 @@ public class MainActivity extends AppCompatActivity
             String query = currentIntent.getStringExtra(SearchManager.QUERY);
 
             category = realm.where(Category.class).equalTo("name", query).findFirst();
-            // PlaceApi.searchByCategory(this, category);
         }
     }
 
@@ -212,8 +210,10 @@ public class MainActivity extends AppCompatActivity
     public void onResume() {
         super.onResume();
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String accessToken = sharedPreferences.getString(getString(R.string.settings_access_token), null);
+//        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+//        String accessToken = sharedPreferences.getString(getString(R.string.settings_access_token), null);
+
+        String accessToken = SharedPreferencesHelper.getAuthorizationToken(this);
 
         // When in onResume method, app will insist that user logs in whatever he tries to do
         // For example: tries to press back button while on login form activity
@@ -228,13 +228,37 @@ public class MainActivity extends AppCompatActivity
         //Configuration.getInstance().save(this, prefs);
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
 
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        final String searchCategoryName = preferences.getString("searchCategoryName", null);
 
+        if(searchCategoryName != null) {
+            category = realm.where(Category.class).equalTo("name", searchCategoryName).findFirst();
+        }
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if(category != null) {
+            SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+
+            editor.putString("searchCategoryName", category.getName());
+            editor.apply();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+
+        editor.clear();
+        editor.apply();
 
         realm.close();
     }
@@ -247,12 +271,8 @@ public class MainActivity extends AppCompatActivity
             GeoPoint screenBottomRight = new GeoPoint(boundingBox.getLatSouth(),
                                                       boundingBox.getLonEast());
 
-
-//            GeoPoint screenTopLeft = mapView.getProjection().fromPixels(0, 0);
-//            GeoPoint screenBottomRight = mapView.getProjection().fromPixels(mapView.getWidth(),
-//                                                                             mapView.getHeight());
-
-            PlaceApi.SearchAreaByCategoryService.startService(this, category, screenTopLeft, screenBottomRight);
+            PlaceApi.SearchAreaByCategoryService.startService(this, category,
+                                                              screenTopLeft, screenBottomRight);
             places = realm.where(Place.class)
                           .between("lat", screenBottomRight.getLatitude(),
                                           screenTopLeft.getLatitude())
@@ -270,7 +290,6 @@ public class MainActivity extends AppCompatActivity
                         Marker placeMarker = new Marker(mapView);
                         final GeoPoint placePoint = new GeoPoint(place.getLat(), place.getLng());
                         placeMarker.setPosition(placePoint);
-                        placeMarker.setTitle(place.getName());
                         placeMarker.setIcon(getResources().getDrawable(R.drawable.ic_place));
                         placeMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                         placeMarker.setInfoWindow(new PlaceInfoWindow(mapView));

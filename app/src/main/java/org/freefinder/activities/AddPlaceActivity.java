@@ -54,14 +54,15 @@ public class AddPlaceActivity extends AppCompatActivity {
             Manifest.permission.CAMERA
     };
 
-    @BindView(R.id.place_image) ImageView mImageView;
+    @BindView(R.id.place_image)        ImageView mImageView;
     private Bitmap imageBitmap;
 
-    @BindView(R.id.place_name) EditText placeNameEditText;
-    @BindView(R.id.place_category) AutoCompleteTextView placeCategoryTextView;
-    @BindView(R.id.add_place_button) Button addPlaceButton;
+    @BindView(R.id.place_name)         EditText placeNameEditText;
+    @BindView(R.id.place_description)  EditText placeDescriptionEditText;
+    @BindView(R.id.place_category)     AutoCompleteTextView placeCategoryTextView;
+    @BindView(R.id.add_place_button)   Button addPlaceButton;
     @BindView(R.id.add_place_progress) ProgressBar progressBar;
-    @BindView(R.id.add_place_form) ScrollView scrollView;
+    @BindView(R.id.add_place_form)     ScrollView scrollView;
 
     private Realm realm;
 
@@ -112,6 +113,7 @@ public class AddPlaceActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     Place place = new Place();
                     place.setName(placeNameEditText.getText().toString());
+                    place.setDescription(placeDescriptionEditText.getText().toString());
                     final Category category = realm.where(Category.class)
                                                    .equalTo("name", placeCategoryTextView.getText()
                                                                                          .toString())
@@ -127,6 +129,7 @@ public class AddPlaceActivity extends AppCompatActivity {
 
                     try {
                         newPlaceJson.put("name", place.getName());
+                        newPlaceJson.put("description", place.getDescription());
                         newPlaceJson.put("category_id", place.getCategory().getId());
                         newPlaceJson.put("encoded_image", place.getEncodedImage());
                         newPlaceJson.put("lat", place.getLat());

@@ -1,11 +1,15 @@
 package org.freefinder.activities;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -25,11 +29,15 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.realm.Realm;
 
+import static org.freefinder.activities.Constants.RESOURCE_ID;
+import static org.freefinder.activities.Constants.REVISION_TYPE;
+
 public class PlaceDetailActivity extends AppCompatActivity {
 
     @BindView(R.id.place_image)         ImageView placeImageView;
     @BindView(R.id.place_name)          TextView placeNameTextView;
     @BindView(R.id.place_category)      TextView placeCategoryTextView;
+    @BindView(R.id.place_description)   TextView placeDescriptionTextView;
     @BindViews({ R.id.like_button,
                  R.id.dislike_button }) List<ImageButton> buttons;
     @BindViews({ R.id.likes_count,
@@ -50,33 +58,29 @@ public class PlaceDetailActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        String placeName = getIntent().getStringExtra("placeName");
+        long placeId = getIntent().getLongExtra("id", 0);
         place = realm.where(Place.class)
-                     .equalTo("name", placeName)
+                     .equalTo("id", placeId)
                      .findFirst();
 
         placeImageView.setImageBitmap(ImageEncoder.decodeImage(place.getEncodedImage()));
         placeNameTextView.setText(place.getName());
         placeCategoryTextView.setText(place.getCategory().getName());
+        placeDescriptionTextView.setText(place.getDescription());
         ButterKnife.apply(textViews, INITIALIZE_COUNTERS, place);
 
-        Rating rating = realm.where(Rating.class)
-                             .equalTo("place_id", place.getId())
-                             .findFirst();
+        final Rating rating = place.getRating();
 
         if(rating != null) {
-            int id = 0;
             switch (rating.getRating()) {
                 case "like":
-                    id = R.id.like_button;
+                    buttons.get(0).getDrawable().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
                     break;
                 case "dislike":
-                    id = R.id.dislike_button;
+                    buttons.get(1).getDrawable().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
                     break;
             }
 
-            final ImageButton button = ButterKnife.findById(this, id);
-            button.getDrawable().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
             ButterKnife.apply(buttons, DISABLE);
         }
     }
@@ -86,6 +90,28 @@ public class PlaceDetailActivity extends AppCompatActivity {
         super.onDestroy();
 
         realm.close();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.revision:
+                Intent revisionDetailIntent = new Intent(this, RevisionDetailActivity.class);
+                revisionDetailIntent.putExtra(RESOURCE_ID, getIntent().getLongExtra(RESOURCE_ID, 0));
+                revisionDetailIntent.putExtra(REVISION_TYPE, "place");
+                startActivity(revisionDetailIntent);
+
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.revision_menu, menu);
+        return true;
     }
 
     static final ButterKnife.Setter<View, Place> INITIALIZE_COUNTERS = new ButterKnife.Setter<View, Place>() {
@@ -108,9 +134,16 @@ public class PlaceDetailActivity extends AppCompatActivity {
         }
     };
 
+    @OnClick({ R.id.fab })
+    public void provideRevision() {
+        Intent revisionIntent = new Intent(this, RevisionActivity.class);
+        revisionIntent.putExtra("revisionType", "place");
+        revisionIntent.putExtra("id", place.getId());
+        startActivity(revisionIntent);
+    }
+
     @OnClick({ R.id.like_button, R.id.dislike_button })
     public void rateSubmit(ImageButton button) {
-        RatingApi.RatingService ratingService = new RatingApi.RatingService();
         String rating;
 
         switch(button.getId()) {
@@ -128,7 +161,7 @@ public class PlaceDetailActivity extends AppCompatActivity {
 
         button.getDrawable().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
         ButterKnife.apply(buttons, DISABLE);
-        ratingService.startService(this, place, rating);
+        RatingApi.RatingService.startService(this, place, rating);
     }
 
     private void updateCounter(int counterId, int count) {

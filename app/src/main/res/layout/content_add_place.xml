@@ -18,7 +18,6 @@
         android:layout_marginBottom="8dp"
         android:visibility="gone" />
 
-
     <ScrollView
         android:id="@+id/add_place_form"
         android:layout_width="match_parent"
@@ -27,7 +26,7 @@
         <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:id="@+id/place_image"
@@ -42,6 +41,13 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/place_name_hint" />
 
+            <EditText
+                android:id="@+id/place_description"
+                android:inputType="textLongMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/place_description_hint" />
+
             <AutoCompleteTextView
                 android:id="@+id/place_category"
                 android:layout_width="match_parent"
@@ -52,7 +58,7 @@
                 android:id="@+id/add_place_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/add_category_button_text" />
+                android:text="@string/add_place_button_text" />
 
         </LinearLayout>
     </ScrollView>

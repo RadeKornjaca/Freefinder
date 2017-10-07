@@ -1,16 +1,19 @@
 package org.freefinder.model;
 
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import io.realm.RealmObject;
 import io.realm.annotations.*;
 
 /**
  * Created by rade on 22.6.17..
  */
-public class Category extends RealmObject {
+public class Category extends RealmObject implements Parcelable {
 
     @PrimaryKey
-    private int id;
+    private long id;
 
     @Index
     private String name;
@@ -21,17 +24,11 @@ public class Category extends RealmObject {
 
     }
 
-    public Category(int id, String name, Category parentCategory) {
-        this.id = id;
-        this.name = name;
-        this.parentCategory = parentCategory;
-    }
-
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -51,8 +48,34 @@ public class Category extends RealmObject {
         this.parentCategory = parentCategory;
     }
 
-    @Override
-    public String toString() {
-        return name;
+    protected Category(Parcel in) {
+        id = in.readLong();
+        name = in.readString();
+        parentCategory = (Category) in.readValue(Category.class.getClassLoader());
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeLong(id);
+        dest.writeString(name);
+        dest.writeValue(parentCategory);
+    }
+
+    @SuppressWarnings("unused")
+    public static final Parcelable.Creator<Category> CREATOR = new Parcelable.Creator<Category>() {
+        @Override
+        public Category createFromParcel(Parcel in) {
+            return new Category(in);
+        }
+
+        @Override
+        public Category[] newArray(int size) {
+            return new Category[size];
+        }
+    };
 }

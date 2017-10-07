@@ -31,17 +31,16 @@ public class RatingApi {
     public static class RatingService extends IntentService {
 
         public static final String PLACE_ID = "org.freefinder.services.extra.PLACE_ID";
-        public static final String TOKEN    = "org.freefinder.services.extra.API_KEY";
+        public static final String RATING_ID = "org.freefinder.services.extra.PLACE_ID";
         public static final String RATING   = "org.freefinder.services.extra.RATING";
 
         public RatingService() {
             super("RatingService");
         }
 
-        public void startService(Context context, Place place, String rating) {
+        public static void startService(Context context, Place place, String rating) {
             Intent ratingIntent = new Intent(context, RatingService.class);
             ratingIntent.putExtra(PLACE_ID, place.getId());
-            ratingIntent.putExtra(TOKEN, SharedPreferencesHelper.getAuthorizationToken(context));
             ratingIntent.putExtra(RATING, rating);
 
             context.startService(ratingIntent);
@@ -51,21 +50,19 @@ public class RatingApi {
         @Override
         protected void onHandleIntent(@Nullable Intent intent) {
             if(intent != null) {
-                final int placeId = intent.getIntExtra(PLACE_ID, 0);
-                final String token = intent.getStringExtra(TOKEN);
+                final long placeId = intent.getLongExtra(PLACE_ID, 0);
                 final String rating = intent.getStringExtra(RATING);
 
-                placeRating(placeId, token, rating);
+                placeRating(placeId, rating);
             }
         }
 
-        private void placeRating(int placeId, String token, String rating) {
+        private void placeRating(long placeId, String rating) {
             Realm realm = Realm.getDefaultInstance();
             final JSONObject requestJson = new JSONObject();
 
             try {
                 requestJson.put("place_id", placeId);
-                requestJson.put("api_key", token);
                 requestJson.put("rating", rating);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -74,11 +71,13 @@ public class RatingApi {
             RequestFuture<JSONObject> ratingFuture = RequestFuture.newFuture();
 
             final JsonObjectRequestWithToken ratingRequest = new JsonObjectRequestWithToken(
-                    Request.Method.PUT,
+                    Request.Method.POST,
                     new UrlBuilder().hostname(BuildConfig.API_URL)
+                                    .resource(BuildConfig.PLACES)
+                                    .resource(String.valueOf(placeId))
                                     .resource(BuildConfig.RATINGS)
                                     .getUrl(),
-                    token,
+                    SharedPreferencesHelper.getAuthorizationToken(getApplicationContext()),
                     requestJson,
                     ratingFuture,
                     ratingFuture
@@ -89,12 +88,12 @@ public class RatingApi {
             try {
                 final JSONObject response = ratingFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
                                                              Constants.TIME_UNIT);
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        realm.createOrUpdateObjectFromJson(Rating.class, response);
-                    }
-                });
+//                realm.executeTransaction(new Realm.Transaction() {
+//                    @Override
+//                    public void execute(Realm realm) {
+//                        realm.createOrUpdateObjectFromJson(Rating.class, response);
+//                    }
+//                });
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {

@@ -93,7 +93,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 Category category = categoryAdapter.getItem(i);
 
                 Intent categoryDetailIntent = new Intent(CategoriesActivity.this, CategoryDetailActivity.class);
-                categoryDetailIntent.putExtra("categoryName", category.getName());
+                categoryDetailIntent.putExtra("id", category.getId());
                 startActivity(categoryDetailIntent);
             }
         });
