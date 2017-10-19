@@ -25,6 +25,7 @@ android {
             buildConfigField 'String', 'PLACES', '"places"'
             buildConfigField 'String', 'RATINGS', '"ratings"'
             buildConfigField 'String', 'REVISIONS', '"revisions"'
+            buildConfigField 'String', 'VISIT', '"visit"'
         }
 
         release {
@@ -35,6 +36,7 @@ android {
             buildConfigField 'String', 'PLACES', '"places"'
             buildConfigField 'String', 'RATINGS', '"ratings"'
             buildConfigField 'String', 'REVISIONS', '"revisions"'
+            buildConfigField 'String', 'VISIT', '"visit"'
 
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

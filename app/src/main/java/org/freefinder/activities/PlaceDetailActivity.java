@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import org.freefinder.R;
 import org.freefinder.api.RatingApi;
+import org.freefinder.api.places.VisitPlaceService;
 import org.freefinder.model.Place;
 import org.freefinder.model.Rating;
 import org.freefinder.shared.ImageEncoder;
@@ -50,6 +51,13 @@ public class PlaceDetailActivity extends AppCompatActivity {
     private Place place;
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        realm.close();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_place_detail);
@@ -60,8 +68,8 @@ public class PlaceDetailActivity extends AppCompatActivity {
 
         long placeId = getIntent().getLongExtra("id", 0);
         place = realm.where(Place.class)
-                     .equalTo("id", placeId)
-                     .findFirst();
+                .equalTo("id", placeId)
+                .findFirst();
 
         placeImageView.setImageBitmap(ImageEncoder.decodeImage(place.getEncodedImage()));
         placeNameTextView.setText(place.getName());
@@ -83,13 +91,8 @@ public class PlaceDetailActivity extends AppCompatActivity {
 
             ButterKnife.apply(buttons, DISABLE);
         }
-    }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        realm.close();
+        VisitPlaceService.startService(this, placeId);
     }
 
     @Override

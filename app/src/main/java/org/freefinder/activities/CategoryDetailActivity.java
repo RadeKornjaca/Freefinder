@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import org.freefinder.R;
+import org.freefinder.api.categories.VisitCategoryService;
 import org.freefinder.model.Category;
 
 import butterknife.BindView;
@@ -60,6 +61,8 @@ public class CategoryDetailActivity extends AppCompatActivity {
         if(category.getParentCategory() != null) {
             parentCategoryTextView.setText(category.getParentCategory().getName());
         }
+
+        VisitCategoryService.startService(this, categoryId);
     }
 
     @Override

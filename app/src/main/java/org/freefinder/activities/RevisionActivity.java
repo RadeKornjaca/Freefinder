@@ -53,15 +53,6 @@ public class RevisionActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         LayoutInflater layoutInflater = getLayoutInflater();
@@ -167,7 +158,7 @@ public class RevisionActivity extends AppCompatActivity {
         EditText categoryNameEditText = (EditText) revisionForm.findViewById(R.id.category_name);
         AutoCompleteTextView parentCategoryTextView = (AutoCompleteTextView) revisionForm.findViewById(R.id.autocomplete_parent_category);
         Button submitButton = (Button) revisionForm.findViewById(R.id.add_category_button);
-        submitButton.setText("Submit Category Revision");
+        submitButton.setText(getString(R.string.category_revision_submit_text));
         submitButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
@@ -198,7 +189,7 @@ public class RevisionActivity extends AppCompatActivity {
         EditText placeDescriptionEditText = (EditText) revisionForm.findViewById(R.id.place_description);
         AutoCompleteTextView placeCategoryTextView = (AutoCompleteTextView) revisionForm.findViewById(R.id.place_category);
         Button submitButton = (Button) revisionForm.findViewById(R.id.add_place_button);
-        submitButton.setText("Submit Place Revision");
+        submitButton.setText(getString(R.string.place_revision_submit_text));
         submitButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
@@ -246,7 +237,7 @@ public class RevisionActivity extends AppCompatActivity {
         Category category = realm.where(Category.class)
                 .equalTo("name", placeCategoryTextView.getText().toString())
                 .findFirst();
-        placeJson.put("parent_category_id", category.getParentCategory().getId());
+        placeJson.put("category_id", category.getId());
 
         return placeJson;
     }
@@ -254,7 +245,6 @@ public class RevisionActivity extends AppCompatActivity {
     private void submitRevision() {
         JSONObject revisionJson = new JSONObject();
         JSONObject paramsJson = new JSONObject();
-
 
         try {
             paramsJson.put("proposable", revisionType.equals("category") ? createCategoryJson()

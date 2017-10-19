@@ -136,6 +136,12 @@
         <service
             android:name=".api.RevisionApi$RevisionApprovalService"
             android:exported="false" />
+        <service
+            android:name=".api.categories.VisitCategoryService"
+            android:exported="false" />
+        <service
+            android:name=".api.places.VisitPlaceService"
+            android:exported="false" />
 
     </application>
 
