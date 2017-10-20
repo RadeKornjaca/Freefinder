@@ -31,6 +31,7 @@ import android.view.MenuItem;
 
 import org.freefinder.R;
 import org.freefinder.api.PlaceApi;
+import org.freefinder.api.places.SearchPlacesService;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
 import org.freefinder.osmdroid.PlaceInfoWindow;
@@ -108,6 +109,9 @@ public class MainActivity extends AppCompatActivity
 
         }
     };
+
+    private String query;
+    private String queryType;
 
     private Realm realm;
     private Category category;
@@ -200,9 +204,11 @@ public class MainActivity extends AppCompatActivity
 
         Intent currentIntent = getIntent();
         if (Intent.ACTION_SEARCH.equals(currentIntent.getAction())) {
-            String query = currentIntent.getStringExtra(SearchManager.QUERY);
+            query = currentIntent.getStringExtra(SearchManager.QUERY);
 
+            clearPlaces();
             category = realm.where(Category.class).equalTo("name", query).findFirst();
+            queryType = (category != null) ? "Category" : "Place";
         }
     }
 
@@ -263,22 +269,37 @@ public class MainActivity extends AppCompatActivity
         realm.close();
     }
 
+    private void clearPlaces() {
+        mapView.getOverlayManager().clear();
+        mapView.invalidate();
+
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                realm.delete(Place.class);
+            }
+        });
+    }
+
     private void fetchPlacesFromBoundary() {
-        if(mLocation != null && category != null) {
+        if(mLocation != null && query != null && queryType != null) {
             BoundingBox boundingBox = mapView.getProjection().getBoundingBox();
             GeoPoint screenTopLeft = new GeoPoint(boundingBox.getLatNorth(),
                                                   boundingBox.getLonWest());
             GeoPoint screenBottomRight = new GeoPoint(boundingBox.getLatSouth(),
                                                       boundingBox.getLonEast());
 
-            PlaceApi.SearchAreaByCategoryService.startService(this, category,
-                                                              screenTopLeft, screenBottomRight);
+//            PlaceApi.SearchAreaByCategoryService.startService(this, category,
+//                                                              screenTopLeft, screenBottomRight);
+
+            SearchPlacesService.startService(this, query, queryType,
+                                             screenTopLeft, screenBottomRight);
             places = realm.where(Place.class)
-                          .between("lat", screenBottomRight.getLatitude(),
-                                          screenTopLeft.getLatitude())
-                          .between("lng", screenTopLeft.getLongitude(),
-                                          screenBottomRight.getLatitude())
-                          .equalTo("category.id", category.getId())
+//                          .between("lat", screenBottomRight.getLatitude(),
+//                                          screenTopLeft.getLatitude())
+//                          .between("lng", screenTopLeft.getLongitude(),
+//                                          screenBottomRight.getLatitude())
+//                          .equalTo("category.id", category.getId())
                           .findAllAsync();
 
             places.addChangeListener(new RealmChangeListener<RealmResults<Place>>() {

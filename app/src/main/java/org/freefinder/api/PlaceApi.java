@@ -112,7 +112,7 @@ public class PlaceApi {
 
     public static class SearchAreaByCategoryService extends IntentService {
 
-        public static final String CATEGORY_ID = "org.freefinder.services.extra.CATEGORY_ID";
+        public static final String CATEGORY_ID = "org.freefinder.services.extra.QUERY";
         public static final String UPPER_LEFT_COORDINATE = "org.freefinder.services.extra.UPPER_LEFT_COORDINATE";
         public static final String DOWN_RIGHT_COORDINATE = "org.freefinder.services.extra.DOWN_RIGHT_COORDINATE";
 

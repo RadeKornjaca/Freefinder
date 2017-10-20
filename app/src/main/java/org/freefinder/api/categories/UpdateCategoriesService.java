@@ -91,8 +91,8 @@ public class UpdateCategoriesService extends IntentService {
                 | ExecutionException
                 | TimeoutException e) {
             e.printStackTrace();
+        } finally {
+            realm.close();
         }
-
-        realm.close();
     }
 }

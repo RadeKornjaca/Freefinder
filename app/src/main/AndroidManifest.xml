@@ -142,6 +142,9 @@
         <service
             android:name=".api.places.VisitPlaceService"
             android:exported="false" />
+        <service
+            android:name=".api.places.SearchPlacesService"
+            android:exported="false" />
 
     </application>
 

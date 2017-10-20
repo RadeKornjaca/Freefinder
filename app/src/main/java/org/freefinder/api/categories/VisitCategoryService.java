@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException;
 
 public class VisitCategoryService extends IntentService {
 
-    private static final String CATEGORY_ID = "org.freefinder.services.extra.CATEGORY_ID";
+    private static final String CATEGORY_ID = "org.freefinder.services.extra.QUERY";
 
     public VisitCategoryService() {
         super("VisitCategoryService");
