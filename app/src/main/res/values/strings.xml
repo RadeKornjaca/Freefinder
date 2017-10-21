@@ -53,7 +53,7 @@
     <string name="dislike_button">Dislike</string>
     <string name="report_button">Report</string>
     <string name="add_place_button_text">Add Place</string>
-    <string name="title_activity_revision">RevisionActivity</string>
+    <string name="title_activity_revision">Submit a revision</string>
     <string name="place_description_hint">Description</string>
 
     <!-- Categories view -->

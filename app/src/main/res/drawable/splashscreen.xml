@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:opacity="opaque">
     <item android:drawable="@color/colorPrimary"/>
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
+    <item android:gravity="center" android:drawable="@drawable/ic_app_icon">
+        <!--<bitmap-->
+            <!--android:gravity="center"-->
+            <!--app:srcCompat="@drawable/ic_app_icon" />-->
             <!--android:src="@drawable/icon"/>-->
     </item>
 </layer-list>

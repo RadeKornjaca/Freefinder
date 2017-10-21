@@ -1,12 +1,15 @@
 package org.freefinder.activities;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -227,6 +230,7 @@ public class RevisionActivity extends AppCompatActivity {
 
     private JSONObject createPlaceJson() throws JSONException {
         JSONObject placeJson = new JSONObject();
+        Place originalPlace = realm.where(Place.class).equalTo("id", id).findFirst();
 
         EditText placeNameEditText = (EditText) findViewById(R.id.place_name);
         EditText placeDescriptionEditText = (EditText) findViewById(R.id.place_description);
@@ -238,6 +242,11 @@ public class RevisionActivity extends AppCompatActivity {
                 .equalTo("name", placeCategoryTextView.getText().toString())
                 .findFirst();
         placeJson.put("category_id", category.getId());
+
+        // TODO: Remove this workaround when ready
+        placeJson.put("lat", originalPlace.getLat());
+        placeJson.put("lng", originalPlace.getLng());
+        placeJson.put("encoded_image", originalPlace.getEncodedImage());
 
         return placeJson;
     }
@@ -257,4 +266,30 @@ public class RevisionActivity extends AppCompatActivity {
         RevisionApi.AddRevisionTask addRevisionTask = new RevisionApi.AddRevisionTask(this, id, revisionType);
         addRevisionTask.execute(revisionJson);
     }
+//
+//
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//                                           int[] grantResults) {
+//
+//        switch (requestCode) {
+//            case APP_CAMERA_PERMISSION:
+//                if (grantResults.length > 0
+//                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    dispatchTakePictureIntent();
+//                }
+//                break;
+//            default:
+//                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        }
+//    }
+//
+//    private boolean permissionsCheck() {
+//        return ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+//    }
+//
+//    public void showProgress(final boolean isLoading) {
+//        scrollView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+//        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+//    }
 }
