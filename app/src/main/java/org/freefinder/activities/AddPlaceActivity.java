@@ -10,6 +10,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -20,6 +22,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -27,6 +30,7 @@ import android.widget.ScrollView;
 
 import org.freefinder.R;
 import org.freefinder.api.PlaceApi;
+import org.freefinder.model.AdditionalField;
 import org.freefinder.model.Category;
 import org.freefinder.model.Place;
 import org.freefinder.shared.ImageEncoder;
@@ -44,6 +48,8 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.realm.Realm;
+import io.realm.RealmList;
+import io.realm.RealmResults;
 
 public class AddPlaceActivity extends AppCompatActivity {
 
@@ -63,6 +69,7 @@ public class AddPlaceActivity extends AppCompatActivity {
     @BindView(R.id.add_place_button)   Button addPlaceButton;
     @BindView(R.id.add_place_progress) ProgressBar progressBar;
     @BindView(R.id.add_place_form)     ScrollView scrollView;
+    @BindView(R.id.add_place_layout)   ConstraintLayout addPlaceConstraintLayout;
 
     private Realm realm;
 
@@ -97,8 +104,8 @@ public class AddPlaceActivity extends AppCompatActivity {
 
         realm = Realm.getDefaultInstance();
 
-        List<Category> categories = realm.where(Category.class).findAll();
-        List<String> categoryNames = new ArrayList<>();
+        final RealmResults<Category> categories = realm.where(Category.class).findAll();
+        final List<String> categoryNames = new ArrayList<>();
 
         for(Category c : categories) {
             categoryNames.add(c.getName());
@@ -107,6 +114,23 @@ public class AddPlaceActivity extends AppCompatActivity {
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, categoryNames);
         placeCategoryTextView.setAdapter(arrayAdapter);
+
+        placeCategoryTextView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if(!hasFocus) {
+                    final String selectedCategoryName = ((AutoCompleteTextView) v).getText()
+                                                                                  .toString();
+                    final Category category = categories.where()
+                                                        .equalTo("name", selectedCategoryName)
+                                                        .findFirst();
+
+                    for(AdditionalField additionalField : category.getAdditionalFields()) {
+                        createEditTextField(additionalField);
+                    }
+                }
+            }
+        });
 
         addPlaceButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -194,45 +218,41 @@ public class AddPlaceActivity extends AppCompatActivity {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
     }
 
-    String mCurrentPhotoPath;
+    private void createEditTextField(AdditionalField additionalField) {
+        ConstraintSet constraintSet = new ConstraintSet();
+        View additionalFieldView;
 
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
+        switch(additionalField.getFieldType()) {
+            case "Text":
+                additionalFieldView = new EditText(this);
+                ((EditText) additionalFieldView).setHint(additionalField.getName());
 
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
+                break;
+            case "Checkbox":
+                additionalFieldView = new CheckBox(this);
+                break;
+            default:
+                additionalFieldView = new View(this);
+        }
 
-    private void setPic() {
-        // Get the dimensions of the View
-        int targetW = mImageView.getWidth();
-        int targetH = mImageView.getHeight();
+        addPlaceConstraintLayout.addView(additionalFieldView);
 
-        // Get the dimensions of the bitmap
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
+        constraintSet.connect(R.id.add_place_layout,
+                ConstraintSet.START,
+                ConstraintSet.PARENT_ID,
+                ConstraintSet.START,
+                8);
+        constraintSet.connect(R.id.add_place_layout,
+                ConstraintSet.END,
+                ConstraintSet.PARENT_ID,
+                ConstraintSet.END,
+                8);
 
-        // Determine how much to scale down the image
-        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+        int lastElementId = addPlaceConstraintLayout.getChildAt(addPlaceConstraintLayout.getChildCount() - 1).getId();
+        constraintSet.connect(lastElementId,
+                              ConstraintSet.BOTTOM,
+                              additionalFieldView.getId(),
+                              ConstraintSet.TOP);
 
-        // Decode the image file into a Bitmap sized to fill the View
-        bmOptions.inJustDecodeBounds = false;
-        bmOptions.inSampleSize = scaleFactor;
-        bmOptions.inPurgeable = true;
-
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        mImageView.setImageBitmap(bitmap);
     }
 }

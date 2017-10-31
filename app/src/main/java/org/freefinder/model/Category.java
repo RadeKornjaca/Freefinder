@@ -4,6 +4,7 @@ package org.freefinder.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.*;
 
@@ -19,6 +20,8 @@ public class Category extends RealmObject implements Parcelable {
     private String name;
 
     private Category parentCategory;
+
+    private RealmList<AdditionalField> additionalFields;
 
     public Category() {
 
@@ -48,10 +51,19 @@ public class Category extends RealmObject implements Parcelable {
         this.parentCategory = parentCategory;
     }
 
+    public RealmList<AdditionalField> getAdditionalFields() {
+        return additionalFields;
+    }
+
+    public void setAdditionalFields(RealmList<AdditionalField> additionalFields) {
+        this.additionalFields = additionalFields;
+    }
+
     protected Category(Parcel in) {
         id = in.readLong();
         name = in.readString();
         parentCategory = (Category) in.readValue(Category.class.getClassLoader());
+        additionalFields = (RealmList) in.readValue(RealmList.class.getClassLoader());
     }
 
     @Override
@@ -64,6 +76,7 @@ public class Category extends RealmObject implements Parcelable {
         dest.writeLong(id);
         dest.writeString(name);
         dest.writeValue(parentCategory);
+        dest.writeValue(additionalFields);
     }
 
     @SuppressWarnings("unused")

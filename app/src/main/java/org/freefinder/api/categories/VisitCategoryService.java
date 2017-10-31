@@ -9,7 +9,6 @@ import com.android.volley.Request;
 import com.android.volley.toolbox.RequestFuture;
 
 import org.freefinder.BuildConfig;
-import org.freefinder.api.CategoriesApi;
 import org.freefinder.api.Constants;
 import org.freefinder.http.JsonObjectRequestWithToken;
 import org.freefinder.http.RequestQueueSingleton;

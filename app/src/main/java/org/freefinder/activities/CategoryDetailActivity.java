@@ -6,14 +6,19 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import org.freefinder.R;
 import org.freefinder.api.categories.VisitCategoryService;
+import org.freefinder.model.AdditionalField;
 import org.freefinder.model.Category;
 
 import butterknife.BindView;
@@ -26,9 +31,9 @@ import static org.freefinder.activities.Constants.REVISION_TYPE;
 
 public class CategoryDetailActivity extends AppCompatActivity {
 
-    @BindView(R.id.category_name) TextView categoryNameTextView;
-
-    @BindView(R.id.parent_category) TextView parentCategoryTextView;
+    @BindView(R.id.category_name)                  TextView categoryNameTextView;
+    @BindView(R.id.parent_category)                TextView parentCategoryTextView;
+    @BindView(R.id.additional_fields_table_layout) TableLayout additionalFieldsTable;
 
     private Realm realm;
     private Category category;
@@ -62,6 +67,10 @@ public class CategoryDetailActivity extends AppCompatActivity {
             parentCategoryTextView.setText(category.getParentCategory().getName());
         }
 
+        for(AdditionalField additionalField : category.getAdditionalFields()) {
+            createTableRow(additionalField);
+        }
+
         VisitCategoryService.startService(this, categoryId);
     }
 
@@ -92,5 +101,41 @@ public class CategoryDetailActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         realm.close();
+    }
+
+    private void createTableRow(AdditionalField additionalField) {
+        TableRow tableRow = new TableRow(this);
+        tableRow.setLayoutParams(new TableRow.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        tableRow.setWeightSum(10);
+
+        TextView additionalFieldNameTextView = new TextView(this);
+        additionalFieldNameTextView.setGravity(Gravity.START);
+        additionalFieldNameTextView.setPadding(5, 5, 5, 5);
+        additionalFieldNameTextView.setText(additionalField.getName());
+
+        ViewGroup.LayoutParams nameLayoutParams = new TableRow.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                7
+        );
+
+        TextView additionalFieldTypeTextView = new TextView(this);
+        additionalFieldTypeTextView.setGravity(Gravity.START);
+        additionalFieldTypeTextView.setPadding(5, 5, 5, 5);
+        additionalFieldTypeTextView.setText(additionalField.getFieldType());
+
+        ViewGroup.LayoutParams typeLayoutParams = new TableRow.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                3
+        );
+
+        tableRow.addView(additionalFieldNameTextView, nameLayoutParams);
+        tableRow.addView(additionalFieldTypeTextView, typeLayoutParams);
+
+        additionalFieldsTable.addView(tableRow);
     }
 }

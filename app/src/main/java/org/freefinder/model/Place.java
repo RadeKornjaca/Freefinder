@@ -3,6 +3,9 @@ package org.freefinder.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.JsonObject;
+
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -28,6 +31,8 @@ public class Place extends RealmObject implements Parcelable {
     private Rating rating;
 
     private String encodedImage;
+
+    private RealmList<KeyValue> metadata;
 
     public Place() {
 
@@ -113,6 +118,14 @@ public class Place extends RealmObject implements Parcelable {
         this.encodedImage = encodedImage;
     }
 
+    public RealmList<KeyValue> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(RealmList<KeyValue> metadata) {
+        this.metadata = metadata;
+    }
+
     protected Place(Parcel in) {
         id = in.readLong();
         name = in.readString();
@@ -124,6 +137,7 @@ public class Place extends RealmObject implements Parcelable {
         category = (Category) in.readValue(Category.class.getClassLoader());
         rating = (Rating) in.readValue(Rating.class.getClassLoader());
         encodedImage = in.readString();
+        metadata = (RealmList<KeyValue>) in.readValue(RealmList.class.getClassLoader());
     }
 
     @Override
@@ -143,6 +157,7 @@ public class Place extends RealmObject implements Parcelable {
         dest.writeValue(category);
         dest.writeValue(rating);
         dest.writeString(encodedImage);
+        dest.writeValue(metadata);
     }
 
     @SuppressWarnings("unused")

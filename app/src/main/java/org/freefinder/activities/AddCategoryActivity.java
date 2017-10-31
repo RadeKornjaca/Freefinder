@@ -2,26 +2,37 @@ package org.freefinder.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.PersistableBundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TableRow;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
 import org.freefinder.http.JsonObjectRequestWithToken;
 import org.freefinder.http.RequestQueueSingleton;
+import org.freefinder.model.AdditionalField;
 import org.freefinder.model.Category;
+import org.freefinder.model.serializers.AdditionalFieldSerializer;
+import org.freefinder.model.serializers.CategorySerializer;
 import org.freefinder.shared.SharedPreferencesHelper;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,15 +43,18 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import io.realm.Realm;
+import io.realm.RealmList;
 
 public class AddCategoryActivity extends AppCompatActivity {
 
-    @BindView(R.id.category_name) EditText categoryNameTextView;
+    private static final String ADDITIONAL_FIELDS       = "additionalFields";
 
+    @BindView(R.id.category_name)                EditText categoryNameTextView;
     @BindView(R.id.autocomplete_parent_category) AutoCompleteTextView parentCategoryTextView;
-
-    @BindView(R.id.add_category_button) Button addCategoryButton;
+    @BindView(R.id.additional_fields_layout)     LinearLayout additionalFieldsLayout;
+    @BindView(R.id.add_category_button)          Button addCategoryButton;
 
     private Realm realm;
     private List<Category> categories;
@@ -63,21 +77,53 @@ public class AddCategoryActivity extends AppCompatActivity {
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        if(savedInstanceState != null) {
+            final ArrayList<AdditionalField> additionalFields = savedInstanceState.getParcelableArrayList(ADDITIONAL_FIELDS);
+
+            for(AdditionalField additionalField : additionalFields) {
+                createField();
+
+                LinearLayout fieldLayout = (LinearLayout) additionalFieldsLayout.getChildAt(additionalFieldsLayout.getChildCount() - 2);
+                ((EditText) fieldLayout.getChildAt(0)).setText(additionalField.getName());
+                ((Spinner) fieldLayout.getChildAt(1)).setSelection(0);
+            }
+        }
+
         addCategoryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 final Category parentCategory = getParentCategory(parentCategoryTextView.getText().toString());
+                RealmList<AdditionalField> additionalFields = getAdditionalFields();
 
-                JSONObject newCategoryJson = new JSONObject();
+                Category newCategory = new Category();
+                newCategory.setName(categoryNameTextView.getText().toString());
+                newCategory.setParentCategory(parentCategory);
+                newCategory.setAdditionalFields(additionalFields);
 
+                GsonBuilder gsonBuilder = new GsonBuilder();
+                gsonBuilder.registerTypeAdapter(Category.class, new CategorySerializer());
+                gsonBuilder.registerTypeAdapter(AdditionalField.class, new AdditionalFieldSerializer());
+                Gson gson = gsonBuilder.create();
+                JSONObject newCategoryJson = null;
                 try {
-                    newCategoryJson.put("name", categoryNameTextView.getText().toString());
-                    if(parentCategory != null) {
-                        newCategoryJson.put("parent_category_id", parentCategory.getId());
-                    }
+                    newCategoryJson = new JSONObject(gson.toJson(newCategory));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+
+//                JSONObject newCategoryJson = new JSONObject();
+//
+//                try {
+//                    newCategoryJson.put("name", categoryNameTextView.getText().toString());
+//                    if(parentCategory != null) {
+//                        newCategoryJson.put("parent_category_id", parentCategory.getId());
+//                    }
+//
+//                    ArrayList<AdditionalField> additionalFields = getAdditionalFields();
+//                    newCategoryJson.put("additional_fields", additionalFields);
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                }
 
                 JsonObjectRequestWithToken addCategoryRequest = new JsonObjectRequestWithToken(
                         Request.Method.POST,
@@ -127,9 +173,69 @@ public class AddCategoryActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        ArrayList<AdditionalField> additionalFields = new ArrayList<>();
+        additionalFields.addAll(getAdditionalFields());
+
+        outState.putParcelableArrayList(ADDITIONAL_FIELDS, additionalFields);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         realm.close();
+    }
+
+    @OnClick(R.id.add_field_button)
+    public void onClick() {
+        createField();
+    }
+
+    private void createField() {
+        Spinner fieldType = new Spinner(this);
+        ArrayAdapter<String> fieldTypesAdapter = new ArrayAdapter<String>(
+                this,
+                R.layout.support_simple_spinner_dropdown_item,
+                new String[] {"Text", "Checkbox"}
+        );
+        fieldType.setAdapter(fieldTypesAdapter);
+
+        EditText fieldName = new EditText(this);
+        fieldName.setHint("Field Name");
+        ViewGroup.LayoutParams fieldNameLayoutParams = new TableRow.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                0.7f
+        );
+        fieldName.setLayoutParams(fieldNameLayoutParams);
+
+        LinearLayout fieldLinearLayout = new LinearLayout(this);
+
+        LinearLayout.LayoutParams fieldLayoutParams =  new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                                                                                     ViewGroup.LayoutParams.WRAP_CONTENT);
+        fieldLinearLayout.setLayoutParams(fieldLayoutParams);
+
+        fieldLinearLayout.addView(fieldName);
+        fieldLinearLayout.addView(fieldType);
+
+        additionalFieldsLayout.addView(fieldLinearLayout, additionalFieldsLayout.getChildCount() - 1);
+    }
+
+    private RealmList<AdditionalField> getAdditionalFields() {
+        RealmList<AdditionalField> additionalFields = new RealmList<>();
+
+        for(int i = 0;i < additionalFieldsLayout.getChildCount() - 1;i++) {
+            AdditionalField additionalField = new AdditionalField();
+
+            final LinearLayout fieldRow = (LinearLayout) additionalFieldsLayout.getChildAt(i);
+            additionalField.setName(((EditText) fieldRow.getChildAt(0)).getText().toString());
+            additionalField.setFieldType((String) (((Spinner) fieldRow.getChildAt(1)).getSelectedItem()));
+
+            additionalFields.add(additionalField);
+        }
+        return additionalFields;
     }
 
     private Category getParentCategory(String parentCategoryName) {
