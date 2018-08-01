@@ -46,6 +46,8 @@
 
     <!-- Add new place -->
     <string name="title_activity_add_place">Add New Place</string>
+    <string name="basic_info_tab_text">Basic</string>
+    <string name="additional_info_tab_text">Additional info</string>
     <string name="place_name_hint">Name</string>
     <string name="place_category_hint">Category</string>
     <string name="title_activity_place_detail">Place Details</string>

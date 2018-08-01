@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.RequestFuture;
@@ -20,27 +19,20 @@ import org.freefinder.BuildConfig;
 import org.freefinder.activities.CategoryDetailActivity;
 import org.freefinder.activities.PlaceDetailActivity;
 import org.freefinder.activities.RevisionDetailActivity;
-import org.freefinder.adapters.ScreenSlidePagerAdapter;
-import org.freefinder.fragments.RevisionFragment;
+import org.freefinder.adapters.pager.ScreenSlidePagerAdapter;
 import org.freefinder.http.JsonArrayRequestWithToken;
 import org.freefinder.http.JsonObjectRequestWithToken;
 import org.freefinder.http.RequestQueueSingleton;
-import org.freefinder.model.Category;
 import org.freefinder.model.deserializers.ParcelableDeserializer;
-import org.freefinder.model.Place;
 import org.freefinder.model.Revision;
-import org.freefinder.receivers.HttpServiceReceiver;
 import org.freefinder.shared.SharedPreferencesHelper;
 import org.freefinder.shared.UrlBuilder;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
 import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
-import io.realm.Realm;
 
 /**
  * Created by rade on 23.9.17..
@@ -276,8 +268,8 @@ public class RevisionApi {
             RequestQueueSingleton.getInstance(getApplicationContext()).enqueueRequest(ratingRequest);
 
             try {
-                final JSONObject response = revisionApprovalFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
-                                                                       Constants.TIME_UNIT);
+                revisionApprovalFuture.get(Constants.STANDARD_REQUEST_TIMEOUT,
+                                           Constants.TIME_UNIT);
             } catch (InterruptedException
                     | ExecutionException
                     | TimeoutException e) {

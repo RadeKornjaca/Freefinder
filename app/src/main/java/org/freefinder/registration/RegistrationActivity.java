@@ -1,11 +1,14 @@
-package org.freefinder.activities;
+package org.freefinder.registration;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.Snackbar;
+import android.support.test.espresso.idling.CountingIdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
 
@@ -13,13 +16,11 @@ import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -30,31 +31,26 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.freefinder.BuildConfig;
+import org.freefinder.FreefinderApplication;
 import org.freefinder.R;
+import org.freefinder.activities.MainActivity;
 import org.freefinder.api.LoginApi;
-import org.freefinder.http.IResponse;
-import org.freefinder.http.RequestQueueSingleton;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import javax.inject.Inject;
+
+import dagger.android.AndroidInjection;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
 /**
  * A login screen that offers login via email/password.
  */
-public class RegistrationActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
+public class RegistrationActivity extends AppCompatActivity implements LoaderCallbacks<Cursor>, RegistrationContract.View {
 
     private static final String TAG = RegistrationActivity.class.getSimpleName();
     /**
@@ -69,11 +65,22 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
     private View mProgressView;
     private View mLoginFormView;
 
+    @Inject
+    RegistrationContract.UserActionsListener registrationPresenter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registration);
         setupActionBar();
+
+        RegistrationActivityComponent registrationActivityComponent = DaggerRegistrationActivityComponent.builder()
+                .registrationActivityModule(new RegistrationActivityModule(this))
+                .httpComponent(FreefinderApplication.get(this).getHttpComponent())
+                .build();
+
+        registrationActivityComponent.injectRegistrationActivity(this);
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -223,19 +230,22 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
 //            mAuthTask = new UserRegistrationTask(email, password, confirmPassword);
 //            mAuthTask.execute((Void) null);
 
-            JSONObject user = new JSONObject();
-            JSONObject parameters = new JSONObject();
-            try {
-                parameters.put("email", email);
-                parameters.put("password", password);
-                parameters.put("password_confirmation", confirmPassword);
-                user.put("user", parameters);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+//            JSONObject user = new JSONObject();
+//            JSONObject parameters = new JSONObject();
+//            try {
+//                parameters.put("email", email);
+//                parameters.put("password", password);
+//                parameters.put("password_confirmation", confirmPassword);
+//                user.put("user", parameters);
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//
+//            LoginApi.UserRegistrationTask userRegistrationTask = new LoginApi.UserRegistrationTask(this);
+//            userRegistrationTask.execute(user);
 
-            LoginApi.UserRegistrationTask userRegistrationTask = new LoginApi.UserRegistrationTask(this);
-            userRegistrationTask.execute(user);
+            registrationPresenter.submitRegistration(email, password, confirmPassword);
+
 //
 //            JsonObjectRequest registerRequest = new JsonObjectRequest(Request.Method.POST,
 //                    TextUtils.join("/", new String[] { BuildConfig.API_URL,
@@ -276,6 +286,25 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
         }
     }
 
+    @Override
+    public void showProgress(boolean isLoading) {
+        mProgressView.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        mLoginFormView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void successfulRegistrationRedirection() {
+        Intent intent = new Intent(RegistrationActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+    }
+
+    @Override
+    public void showRegistrationError() {
+        mPasswordView.setError(getString(R.string.error_incorrect_password));
+        mPasswordView.requestFocus();
+    }
+
     private boolean isEmailValid(String email) {
         //TODO: Replace this with your own logic
         return email.contains("@");
@@ -289,38 +318,38 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
     /**
      * Shows the progress UI and hides the login form.
      */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-    public void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-
-            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-            mLoginFormView.animate().setDuration(shortAnimTime).alpha(
-                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-                }
-            });
-
-            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            mProgressView.animate().setDuration(shortAnimTime).alpha(
-                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-                }
-            });
-        } else {
-            // The ViewPropertyAnimator APIs are not available, so simply show
-            // and hide the relevant UI components.
-            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-        }
-    }
+//    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+//    public void showProgress(final boolean show) {
+//        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
+//        // for very easy animations. If available, use these APIs to fade-in
+//        // the progress spinner.
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+//            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+//
+//            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+//            mLoginFormView.animate().setDuration(shortAnimTime).alpha(
+//                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+//                @Override
+//                public void onAnimationEnd(Animator animation) {
+//                    mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+//                }
+//            });
+//
+//            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+//            mProgressView.animate().setDuration(shortAnimTime).alpha(
+//                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
+//                @Override
+//                public void onAnimationEnd(Animator animation) {
+//                    mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+//                }
+//            });
+//        } else {
+//            // The ViewPropertyAnimator APIs are not available, so simply show
+//            // and hide the relevant UI components.
+//            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+//            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+//        }
+//    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {

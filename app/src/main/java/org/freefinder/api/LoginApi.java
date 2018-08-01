@@ -3,30 +3,22 @@ package org.freefinder.api;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.text.TextUtils;
-import android.util.Log;
 
-import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.RequestFuture;
-import com.google.gson.JsonObject;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
 import org.freefinder.activities.LoginActivity;
 import org.freefinder.activities.MainActivity;
-import org.freefinder.activities.RegistrationActivity;
+import org.freefinder.registration.RegistrationActivity;
 import org.freefinder.http.RequestQueueSingleton;
 import org.freefinder.shared.SharedPreferencesHelper;
 import org.freefinder.shared.UrlBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;

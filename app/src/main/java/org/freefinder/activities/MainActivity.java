@@ -16,6 +16,7 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -80,6 +81,10 @@ public class MainActivity extends AppCompatActivity
     };
 
     private static final int ZOOM_LEVEL = 20;
+
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
 
     @BindView(R.id.map) MapView mapView;
     private IMapController mapController;

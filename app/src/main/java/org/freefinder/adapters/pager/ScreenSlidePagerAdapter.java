@@ -1,4 +1,4 @@
-package org.freefinder.adapters;
+package org.freefinder.adapters.pager;
 
 /**
  * Created by rade on 30.9.17..
@@ -37,7 +37,7 @@ public class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 
         Bundle revisionableBundle = new Bundle();
         revisionableBundle.putParcelable(CURRENT_INFO, currentInfo);
-        revisionableBundle.putParcelable(REVISIONABLE, revisionables[position]);;
+        revisionableBundle.putParcelable(REVISIONABLE, revisionables[position]);
         revisionFragment.setArguments(revisionableBundle);
 
         return revisionFragment;
