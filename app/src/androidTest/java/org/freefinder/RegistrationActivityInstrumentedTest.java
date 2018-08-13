@@ -1,17 +1,10 @@
 package org.freefinder;
 
-import android.support.test.espresso.Espresso;
-import android.support.test.espresso.IdlingRegistry;
-import android.support.test.espresso.ViewAction;
-import android.support.test.espresso.ViewInteraction;
 import android.support.test.espresso.intent.Intents;
-import android.support.test.espresso.intent.rule.IntentsTestRule;
 import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 
-import com.jakewharton.espresso.OkHttp3IdlingResource;
-
-import org.freefinder.activities.LoginActivity;
+import org.freefinder.login.LoginActivity;
 import org.freefinder.registration.RegistrationActivity;
 import org.freefinder.shared.SharedPreferencesHelper;
 import org.junit.After;

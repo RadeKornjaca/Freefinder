@@ -16,6 +16,7 @@ import android.view.MenuItem;
 
 import org.freefinder.R;
 import org.freefinder.builders.ToolbarBuilder;
+import org.freefinder.login.LoginActivity;
 
 public class MapActivity extends AppCompatActivity {
 

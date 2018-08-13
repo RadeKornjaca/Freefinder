@@ -1,4 +1,4 @@
-package org.freefinder.activities;
+package org.freefinder.login;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -27,23 +27,32 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.freefinder.FreefinderApplication;
 import org.freefinder.R;
+import org.freefinder.activities.MainActivity;
 import org.freefinder.api.LoginApi;
 import org.freefinder.registration.RegistrationActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import javax.inject.Inject;
+
+import butterknife.BindView;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
 /**
  * A login screen that offers login via email/password.
  */
-public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
+public class LoginActivity extends AppCompatActivity
+                           implements LoaderCallbacks<Cursor>,
+                                      LoginContract.View {
 
     /**
      * Id to identity READ_CONTACTS permission request.
@@ -51,15 +60,29 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private static final int REQUEST_READ_CONTACTS = 0;
 
     // UI references.
+    @BindView(R.id.login_activity)
+    LinearLayout loginActivityLayout;
     private AutoCompleteTextView mEmailView;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
 
+    @Inject
+    LoginContract.UserActionsListener loginPresenter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        LoginActivityComponent loginActivityComponent = DaggerLoginActivityComponent
+                .builder()
+                .loginActivityModule(new LoginActivityModule(this))
+                .httpComponent(FreefinderApplication.get(this).getHttpComponent())
+                .build();
+
+        loginActivityComponent.injectLoginActivity(this);
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -76,21 +99,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         });
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
-        });
+        Button mEmailSignInButton = findViewById(R.id.email_sign_in_button);
+        mEmailSignInButton.setOnClickListener(view -> attemptLogin());
 
-        Button mRegistrationButton = (Button) findViewById(R.id.email_registration_button);
-        mRegistrationButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent registrationIntent = new Intent(LoginActivity.this, RegistrationActivity.class);
-                startActivity(registrationIntent);
-            }
+        Button mRegistrationButton = findViewById(R.id.email_registration_button);
+        mRegistrationButton.setOnClickListener(view -> {
+            Intent registrationIntent = new Intent(LoginActivity.this, RegistrationActivity.class);
+            startActivity(registrationIntent);
         });
 
         mLoginFormView = findViewById(R.id.login_form);
@@ -182,17 +197,35 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // form field with an error.
             focusView.requestFocus();
         } else {
-            JSONObject loginCredentialsJson = new JSONObject();
-            try {
-                loginCredentialsJson.put("email", email);
-                loginCredentialsJson.put("password", password);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            LoginApi.UserLoginTask userLoginTask = new LoginApi.UserLoginTask(this);
-            userLoginTask.execute(loginCredentialsJson);
+//            JSONObject loginCredentialsJson = new JSONObject();
+//            try {
+//                loginCredentialsJson.put("email", email);
+//                loginCredentialsJson.put("password", password);
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//
+//            LoginApi.UserLoginTask userLoginTask = new LoginApi.UserLoginTask(this);
+//            userLoginTask.execute(loginCredentialsJson);
+            loginPresenter.submitLogin(email, password);
         }
+    }
+
+    @Override
+    public void successfulLoginRedirection() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+    }
+
+    @Override
+    public void showLoginError() {
+        formError();
+    }
+
+    @Override
+    public void displayServerErrorMessage() {
+        Snackbar.make(loginActivityLayout, R.string.server_error, Snackbar.LENGTH_LONG);
     }
 
     public void formError() {

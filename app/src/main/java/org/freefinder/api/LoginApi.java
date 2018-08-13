@@ -10,7 +10,7 @@ import com.android.volley.toolbox.RequestFuture;
 
 import org.freefinder.BuildConfig;
 import org.freefinder.R;
-import org.freefinder.activities.LoginActivity;
+import org.freefinder.login.LoginActivity;
 import org.freefinder.activities.MainActivity;
 import org.freefinder.registration.RegistrationActivity;
 import org.freefinder.http.RequestQueueSingleton;

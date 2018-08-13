@@ -66,15 +66,15 @@
                 android:value="org.freefinder.activities.MapActivity" />
         </activity>
         <activity
-            android:name=".activities.LoginActivity"
+            android:name=".login.LoginActivity"
             android:label="@string/title_activity_login" />
         <activity
             android:name=".registration.RegistrationActivity"
             android:label="@string/title_activity_registration"
-            android:parentActivityName=".activities.LoginActivity">
+            android:parentActivityName=".login.LoginActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.freefinder.activities.LoginActivity" />
+                android:value="org.freefinder.login.LoginActivity" />
         </activity>
         <activity
             android:name=".activities.CategoryDetailActivity"

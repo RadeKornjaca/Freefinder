@@ -74,7 +74,8 @@ public class RegistrationActivity extends AppCompatActivity implements LoaderCal
         setContentView(R.layout.activity_registration);
         setupActionBar();
 
-        RegistrationActivityComponent registrationActivityComponent = DaggerRegistrationActivityComponent.builder()
+        RegistrationActivityComponent registrationActivityComponent = DaggerRegistrationActivityComponent
+                .builder()
                 .registrationActivityModule(new RegistrationActivityModule(this))
                 .httpComponent(FreefinderApplication.get(this).getHttpComponent())
                 .build();
